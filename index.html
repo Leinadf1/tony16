@@ -37,7 +37,7 @@
         h1 { font-size: 22px; font-weight: 700; color: #58a6ff; margin: 0; letter-spacing: -0.5px; }
         #chan-count { font-size: 13px; color: #8b949e; font-weight: 600; background: #21262d; padding: 4px 12px; border-radius: 20px; }
         
-        /* --- LOGICA ADATTIVA PC/MOBILE --- */
+        /* PLAYER ADATTIVO */
         .player-container { 
             width: 100%; 
             max-width: 820px; 
@@ -50,7 +50,6 @@
         @media (max-width: 600px) {
             body { padding: 0; }
             #header { padding: 15px; margin-bottom: 0; border: none; }
-            /* Su mobile il player resta fisso in alto mentre scorri */
             .player-container { 
                 position: sticky; 
                 top: 0; 
@@ -60,7 +59,6 @@
             .grid { padding: 0 10px; gap: 12px !important; }
             .category-title { padding-left: 15px; }
         }
-        /* -------------------------------- */
 
         .category-container { width: 100%; max-width: 1000px; margin-bottom: 45px; box-sizing: border-box; }
         .category-title { 
@@ -113,8 +111,8 @@
     <div id="main-list" style="width: 100%;"></div>
 
 <script>
-// RIPRISTINATA TUA LOGICA ORIGINALE
-const SOURCE = "lista.m3u";
+// RIPRISTINATO ENDPOINT API
+const SOURCE_API = "/api/get-list";
 
 async function init() {
     const video = document.getElementById('video');
@@ -125,7 +123,6 @@ async function init() {
 
     player.configure({ manifest: { dash: { ignoreDrmInfo: true } }, streaming: { jumpLargeGaps: true } });
 
-    // Filtro per domini specifici (come nel tuo codice)
     player.getNetworkingEngine().registerRequestFilter((type, request) => {
         if (request.uris[0].includes('pluscdn.pl') || request.uris[0].includes('t-mobile.pl')) {
             request.allowCrossOrigin = true;
@@ -135,7 +132,8 @@ async function init() {
     });
 
     try {
-        const res = await fetch(SOURCE);
+        // CHIAMATA ALLA TUA API ORIGINALE
+        const res = await fetch(SOURCE_API);
         const text = await res.text();
         const lines = text.split('\n');
         let ch = { drm: {} };
@@ -186,7 +184,6 @@ async function init() {
                     player.configure({ drm: { clearKeys: currentCh.drm } });
                     const finalUrl = url.startsWith('http://') ? url.replace('http://', 'https://') : url;
                     await player.load(finalUrl);
-                    // Solo su PC scrolla in alto
                     if (window.innerWidth > 600) window.scrollTo({top: 0, behavior: 'smooth'});
                 };
                 grid.appendChild(card);
@@ -194,7 +191,7 @@ async function init() {
             }
         }
         chanCount.innerText = count + " CANALI";
-    } catch(e) { console.error("Errore lista:", e); }
+    } catch(e) { console.error("Errore API:", e); }
 }
 document.addEventListener('shaka-ui-loaded', init);
 </script>
