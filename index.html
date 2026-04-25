@@ -148,8 +148,6 @@
     <div id="main-list" style="width: 100%;"></div>
 
 <script>
-// Se sei su Vercel e usi una funzione API, usa "/api/get-list"
-// Se il file è fisico nella cartella, usa "lista.m3u"
 const SOURCE = "/api/get-list";
 
 async function init() {
@@ -159,35 +157,43 @@ async function init() {
     const mainList = document.getElementById('main-list');
     const chanCount = document.getElementById('chan-count');
 
-    // Configurazione player (Logica funzionante)
+    // === FIX PRINCIPALI PER I CANALI POLACCHI ===
+    // 1. Polyfill per HLS + abilitazione esplicita
+    shaka.polyfill.installAll();
     player.configure({ 
-        manifest: { dash: { ignoreDrmInfo: true } }, 
-        streaming: { jumpLargeGaps: true } 
+        manifest: { 
+            dash: { ignoreDrmInfo: true },
+            hls: { enabled: true }   // supporto nativo HLS (.m3u8)
+        }, 
+        streaming: { jumpLargeGaps: true },
+        drm: { retryParameters: { maxAttempts: 2 } }
     });
-
-    // Filtro di rete specifico per bypassare blocchi Origin/Referer dei polacchi
+    
+    // 2. Filtro più aggressivo per header infosti (Origin/Referer)
+    //    Imposta anche un User-Agent realistico per i server polacchi
     player.getNetworkingEngine().registerRequestFilter((type, request) => {
-        if (request.uris[0].includes('pluscdn.pl') || request.uris[0].includes('t-mobile.pl')) {
-            request.allowCrossOrigin = true;
-            delete request.headers['Origin'];
-            delete request.headers['Referer'];
-        }
+        // Mantieni Referer originale? meglio rimuovere o impostare falso per alcuni CDN
+        delete request.headers['Origin'];
+        delete request.headers['Referer'];
+        // Imposta User-Agent come Chrome Windows (spesso richiesto)
+        request.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+        // Per stream polacchi, a volte serve Accept-Encoding
+        request.headers['Accept-Encoding'] = 'gzip, deflate, br';
     });
 
     try {
         const res = await fetch(SOURCE);
-        if (!res.ok) throw new Error("Lista non trovata");
+        if (!res.ok) throw new Error(`HTTP ${res.status}: Lista non trovata`);
         const text = await res.text();
         const lines = text.split('\n');
         
         let ch = { drm: {} };
         let count = 0;
-        mainList.innerHTML = ""; // Pulisce prima di caricare
-
+        mainList.innerHTML = "";
+        
         for (let line of lines) {
             line = line.trim();
             
-            // Parsing chiavi (Esattamente come il tuo file originale)
             if (line.includes('license_key=')) {
                 const keyData = line.split('license_key=')[1];
                 if (keyData.includes('{')) {
@@ -210,7 +216,7 @@ async function init() {
                 const url = line;
                 const currentCh = {...ch};
                 count++;
-
+                
                 let gridId = `grid-${currentCh.group.replace(/\s+/g, '-').toLowerCase()}`;
                 let grid = document.getElementById(gridId);
                 
@@ -218,48 +224,69 @@ async function init() {
                     const container = document.createElement('div');
                     container.className = 'category-container';
                     container.innerHTML = `
-                        <div class="category-title">${currentCh.group.toUpperCase()}</div>
+                        <div class="category-title">${escapeHtml(currentCh.group.toUpperCase())}</div>
                         <div class="grid" id="${gridId}"></div>
                     `;
                     mainList.appendChild(container);
                     grid = document.getElementById(gridId);
                 }
-
+                
                 const card = document.createElement('div');
                 card.className = 'channel-card';
                 card.innerHTML = `
-                    <div class="logo-box"><img src="${currentCh.logo}" onerror="this.src='https://via.placeholder.com/150x80?text=TV'"></div>
-                    <div class="info-box"><div class="name">${currentCh.name}</div></div>
+                    <div class="logo-box"><img src="${escapeHtml(currentCh.logo)}" onerror="this.src='https://via.placeholder.com/150x80?text=TV'"></div>
+                    <div class="info-box"><div class="name">${escapeHtml(currentCh.name)}</div></div>
                 `;
                 
                 card.onclick = async () => {
-                    // Gestione stato attivo
+                    // Rimuovi vecchio active
                     document.querySelectorAll('.channel-card').forEach(c => c.classList.remove('active'));
                     card.classList.add('active');
-
+                    
                     await player.unload();
                     
-                    // Applica le chiavi DRM salvate
-                    player.configure({ drm: { clearKeys: currentCh.drm } });
+                    // Applica DRM se presente
+                    if (Object.keys(currentCh.drm).length) {
+                        player.configure({ drm: { clearKeys: currentCh.drm } });
+                    }
                     
-                    // Forza HTTPS (Fondamentale per Vercel/Chrome)
-                    const finalUrl = url.replace('http://', 'https://');
+                    // IMPORTANTE: NON forzare HTTPS! Lascia l'URL originale (spesso http)
+                    // I server polacchi potrebbero non avere HTTPS valido
+                    const finalUrl = url;  // nessuna modifica
                     
                     try {
                         await player.load(finalUrl);
-                        window.scrollTo({top: 0, behavior: 'smooth'});
-                    } catch(e) { console.error("Errore Shaka:", e.code); }
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    } catch (e) {
+                        console.error("Shaka load error:", e);
+                        let msg = "Errore riproduzione: ";
+                        if (e.code === 1001) msg += "URL non accessibile (CORS o blocco)";
+                        else if (e.code === 1003) msg += "Formato non supportato (HLS richiede polyfill)";
+                        else if (e.code === 6001) msg += "DRM non valido o licenza mancante";
+                        else msg += e.message || e.code;
+                        alert(msg);
+                    }
                 };
-                
                 grid.appendChild(card);
-                ch = { drm: {} }; // Reset per il prossimo giro
+                ch = { drm: {} };
             }
         }
         chanCount.innerText = count + " CANALI";
     } catch(e) { 
-        console.error("Errore fetching:", e);
+        console.error("Fetch lista:", e);
         chanCount.innerText = "ERRORE CARICAMENTO";
     }
+}
+
+// Helper anti-XSS
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
 }
 
 // Avvio quando l'interfaccia Shaka è pronta
