@@ -58,6 +58,15 @@ async function init() {
         streaming: { jumpLargeGaps: true } 
     });
 
+    // Filtro di rete semplificato (dall'HTML dove funzionavano gli Eleven)
+    player.getNetworkingEngine().registerRequestFilter((type, request) => {
+        if (request.uris[0].includes('pluscdn.pl') || request.uris[0].includes('t-mobile.pl')) {
+            request.allowCrossOrigin = true;
+            delete request.headers['Origin'];
+            delete request.headers['Referer'];
+        }
+    });
+
     try {
         const res = await fetch(SOURCE_API);
         const text = await res.text();
@@ -68,21 +77,22 @@ async function init() {
         for (let line of lines) {
             line = line.trim();
             
-            // PARSING CHIAVI MIGLIORATO PER MULTI-KEY
             if (line.includes('license_key=')) {
                 const rawKey = line.split('license_key=')[1];
+                // Supporto JSON pulito
                 if (rawKey.startsWith('{')) {
                     try {
                         const parsed = JSON.parse(rawKey);
-                        // Pulizia: assicuriamoci che le chiavi siano minuscole e senza spazi
                         Object.keys(parsed).forEach(k => {
                             ch.drm[k.toLowerCase().replace(/\s/g, '')] = parsed[k].toLowerCase().replace(/\s/g, '');
                         });
-                    } catch(e) { console.error("Errore parse chiavi JSON"); }
-                } else {
-                    const m = line.match(/[a-f0-9]{32}/gi);
-                    if (m && m.length >= 2) {
-                        for (let i = 0; i < m.length; i += 2) { ch.drm[m[i]] = m[i+1]; }
+                    } catch(e) { }
+                } 
+                // Parsing "aggressivo" esadecimale (quello che li faceva andare)
+                const m = line.match(/[a-f0-9]{32}/gi);
+                if (m && m.length >= 2) {
+                    for (let i = 0; i < m.length; i += 2) { 
+                        if (m[i+1]) ch.drm[m[i]] = m[i+1]; 
                     }
                 }
             } 
@@ -116,11 +126,9 @@ async function init() {
                     card.classList.add('active');
                     await player.unload();
                     
-                    // CONFIGURAZIONE DRM OTTIMIZZATA
                     player.configure({
                         drm: {
                             clearKeys: currentCh.drm,
-                            servers: {}, // Reset eventuali server licenze
                             advanced: {
                                 'org.w3.clearkey': {
                                     'distinctiveIdentifierRequired': false,
@@ -133,7 +141,9 @@ async function init() {
                     });
                     
                     try {
-                        await player.load(url);
+                        // Sostituzione forzata protocollo (fondamentale perEleven)
+                        const finalUrl = url.replace('http://', 'https://');
+                        await player.load(finalUrl);
                         window.scrollTo({top: 0, behavior: 'smooth'});
                     } catch(e) { console.error("Errore Shaka:", e.code); }
                 };
