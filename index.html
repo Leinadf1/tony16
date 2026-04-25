@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TV DASHBOARD PRO - VERCEL</title>
+    <title>TV DASHBOARD VERCEL</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.11.11/shaka-player.ui.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.11.11/controls.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
@@ -12,24 +12,23 @@
         #header { width: 100%; max-width: 1000px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid #30363d; padding-bottom: 15px; }
         h1 { font-size: 22px; font-weight: 700; color: #58a6ff; margin: 0; }
         #chan-count { font-size: 13px; color: #8b949e; font-weight: 600; background: #21262d; padding: 4px 12px; border-radius: 20px; }
-        .player-container { width: 100%; max-width: 820px; background: #000; margin-bottom: 40px; border-radius: 8px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .player-container { width: 100%; max-width: 820px; background: #000; margin-bottom: 40px; border-radius: 8px; overflow: hidden; }
         video { width: 100%; aspect-ratio: 16/9; display: block; }
         .category-container { width: 100%; max-width: 1000px; margin-bottom: 40px; }
         .category-title { font-size: 16px; color: #f1e05a; margin-bottom: 15px; font-weight: 700; text-transform: uppercase; border-left: 4px solid #58a6ff; padding-left: 12px; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; }
         .channel-card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; cursor: pointer; transition: 0.2s; overflow: hidden; }
-        .channel-card:hover { transform: translateY(-5px); border-color: #58a6ff; background: #1c2128; }
+        .channel-card:hover { transform: translateY(-5px); border-color: #58a6ff; }
         .logo-box { height: 90px; display: flex; justify-content: center; align-items: center; padding: 10px; background: #0d1117; }
         .logo-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
-        .info-box { padding: 10px; text-align: center; border-top: 1px solid #30363d; font-size: 13px; font-weight: 600; }
-        @media (max-width: 600px) { .grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; } }
+        .info-box { padding: 10px; text-align: center; border-top: 1px solid #30363d; font-size: 13px; }
     </style>
 </head>
 <body>
 
     <div id="header">
         <h1>DASHBOARD TV</h1>
-        <div id="chan-count">CARICAMENTO...</div>
+        <div id="chan-count">CARICAMENTO LOCALE...</div>
     </div>
 
     <div class="player-container" data-shaka-player-container>
@@ -39,8 +38,8 @@
     <div id="main-list" style="width: 100%;"></div>
 
 <script>
-// Link diretto al file RAW (senza proxy)
-const M3U_URL = "https://raw.githubusercontent.com/Leinadf1/tony16/main/lista.m3u";
+// PUNTIAMO AL FILE NELLA STESSA CARTELLA
+const M3U_FILE = "./lista.m3u"; 
 
 async function init() {
     const video = document.getElementById('video');
@@ -52,19 +51,14 @@ async function init() {
     player.configure({ streaming: { jumpLargeGaps: true } });
 
     try {
-        // Fetch diretto con cache-busting per evitare i vecchi errori di GitHub
-        const response = await fetch(M3U_URL + "?nocache=" + Date.now());
+        // Carichiamo il file locale (Vercel lo servirà senza problemi di permessi)
+        const response = await fetch(M3U_FILE);
+        if (!response.ok) throw new Error("File non trovato nella cartella");
         const text = await response.text();
-
-        // Controllo se GitHub restituisce la pagina di errore nera
-        if (text.includes('<!DOCTYPE html>') || !text.includes('#EXTM3U')) {
-            throw new Error("Il file su GitHub non è una lista valida");
-        }
 
         const lines = text.split('\n');
         let current = { drm: {}, group: "ALTRI" };
         let count = 0;
-
         mainList.innerHTML = "";
 
         for (let line of lines) {
@@ -116,11 +110,9 @@ async function init() {
         chanCount.innerText = count + " CANALI CARICATI";
 
     } catch (e) {
-        console.error(e);
-        chanCount.innerText = "ERRORE CARICAMENTO LISTA"; //
+        chanCount.innerText = "ERRORE: FILE LISTA.M3U MANCANTE NELLA CARTELLA";
     }
 }
-
 document.addEventListener('shaka-ui-loaded', init);
 </script>
 </body>
