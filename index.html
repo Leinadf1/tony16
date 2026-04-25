@@ -1,3 +1,45 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TV DASHBOARD VERCEL - REPAIR</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.11.11/shaka-player.ui.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.11.11/controls.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { background-color: #0d1117; color: #c9d1d9; font-family: 'Inter', sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        #header { width: 100%; max-width: 1000px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid #30363d; padding-bottom: 15px; }
+        h1 { font-size: 22px; font-weight: 700; color: #58a6ff; margin: 0; }
+        #chan-count { font-size: 13px; color: #8b949e; font-weight: 600; background: #21262d; padding: 4px 12px; border-radius: 20px; }
+        .player-container { width: 100%; max-width: 820px; background: #000; margin-bottom: 40px; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        video { width: 100%; aspect-ratio: 16/9; display: block; }
+        .category-container { width: 100%; max-width: 1000px; margin-bottom: 40px; }
+        .category-title { font-size: 16px; color: #f1e05a; margin-bottom: 15px; font-weight: 700; text-transform: uppercase; border-left: 4px solid #58a6ff; padding-left: 12px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 20px; }
+        .channel-card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; cursor: pointer; transition: 0.2s; overflow: hidden; display: flex; flex-direction: column; }
+        .channel-card:hover { transform: translateY(-5px); border-color: #58a6ff; background: #1c2128; }
+        .logo-box { height: 90px; display: flex; justify-content: center; align-items: center; padding: 12px; background: #0d1117; }
+        .logo-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .info-box { padding: 12px; text-align: center; border-top: 1px solid #30363d; font-size: 12px; font-weight: 600; color: #f0f6fc; flex-grow: 1; display: flex; align-items: center; justify-content: center; }
+        @media (max-width: 600px) { .grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; } }
+    </style>
+</head>
+<body>
+
+    <div id="header">
+        <h1>DASHBOARD TV</h1>
+        <div id="chan-count">LETTURA FILE...</div>
+    </div>
+
+    <div class="player-container" data-shaka-player-container>
+        <video autoplay data-shaka-player id="video"></video>
+    </div>
+
+    <div id="main-list" style="width: 100%;"></div>
+
+<script>
+// Puntiamo al file locale caricato insieme all'index su Vercel
 const M3U_FILE = "./lista.m3u"; 
 
 async function init() {
@@ -10,97 +52,81 @@ async function init() {
     player.configure({ streaming: { jumpLargeGaps: true } });
 
     try {
-        const response = await fetch(M3U_FILE + "?t=" + Date.now());
+        const response = await fetch(M3U_FILE + "?v=" + Date.now());
+        if (!response.ok) throw new Error("File non trovato");
         const text = await response.text();
-        
-        // Debug in console per vedere cosa sta leggendo davvero
-        console.log("Contenuto grezzo ricevuto:", text.substring(0, 100));
 
-        // Pulizia del testo da caratteri invisibili (BOM)
-        const cleanText = text.replace(/^\uFEFF/, '');
-        const lines = cleanText.split(/\r?\n/);
-        
+        const lines = text.split('\n');
         let current = { drm: {}, group: "ALTRI", name: "", logo: "" };
         let count = 0;
         mainList.innerHTML = "";
 
-        for (let line of lines) {
-            line = line.trim();
-            if (!line) continue; // Salta righe vuote
+        for (let i = 0; i < lines.length; i++) {
+            let line = lines[i].trim();
 
-            // Cerca Chiavi DRM (formato kodi o semplice)
+            // Rilevamento Chiavi DRM (sia formato JSON che testo:testo)
             if (line.toLowerCase().includes('license_key=')) {
-                let val = line.split('=')[1] || "";
-                val = val.replace(/["']/g, ""); // Rimuove eventuali virgolette
+                const val = line.split('=')[1];
                 if (val.startsWith('{')) {
                     try { current.drm = JSON.parse(val); } catch(e) {}
-                } else if (val.includes(':')) {
-                    let parts = val.split(':');
-                    current.drm[parts[0].trim()] = parts[1].trim();
+                } else {
+                    const p = val.split(':');
+                    if (p.length >= 2) current.drm[p[0].trim()] = p[1].trim();
                 }
             } 
-            // Cerca Info Canale
+            // Rilevamento Info Canale
             else if (line.startsWith('#EXTINF:')) {
-                let logoMatch = line.match(/tvg-logo="([^"]+)"/i);
-                let groupMatch = line.match(/group-title="([^"]+)"/i);
-                let nameMatch = line.match(/,(.*)$/);
-                
-                if (logoMatch) current.logo = logoMatch[1];
-                if (groupMatch) current.group = groupMatch[1];
-                if (nameMatch) current.name = nameMatch[1].trim();
+                current.logo = (line.match(/tvg-logo="([^"]+)"/i) || [])[1] || "";
+                current.group = (line.match(/group-title="([^"]+)"/i) || [])[1] || "ALTRI";
+                current.name = (line.match(/,(.*)/) || [])[1] || "Canale Senza Nome";
             } 
-            // Se la riga contiene un link, chiudi il canale e aggiungilo
-            else if (line.toLowerCase().startsWith('http')) {
-                current.url = line;
+            // Rilevamento URL e Chiusura Oggetto
+            else if (line.startsWith('http')) {
+                const ch = {...current, url: line};
                 
-                // Se non ha nome, usa una parte dell'URL
-                if (!current.name) current.name = "Canale " + (count + 1);
-
-                let gridId = `grid-${current.group.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+                // Creazione Griglia se non esiste
+                let gridId = `grid-${ch.group.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
                 let grid = document.getElementById(gridId);
                 
                 if (!grid) {
                     const container = document.createElement('div');
                     container.className = 'category-container';
-                    container.innerHTML = `<div class="category-title">${current.group.toUpperCase()}</div><div class="grid" id="${gridId}"></div>`;
+                    container.innerHTML = `<div class="category-title">${ch.group.toUpperCase()}</div><div class="grid" id="${gridId}"></div>`;
                     mainList.appendChild(container);
                     grid = document.getElementById(gridId);
                 }
 
+                // Creazione Card
                 const card = document.createElement('div');
                 card.className = 'channel-card';
-                const safeDrm = JSON.stringify(current.drm);
-                const safeUrl = current.url;
-                
                 card.innerHTML = `
-                    <div class="logo-box"><img src="${current.logo}" onerror="this.src='https://via.placeholder.com/150x80/21262d/8b949e?text=TV'"></div>
-                    <div class="info-box">${current.name}</div>
+                    <div class="logo-box"><img src="${ch.logo}" onerror="this.src='https://via.placeholder.com/150x80/21262d/8b949e?text=LOGO'"></div>
+                    <div class="info-box">${ch.name}</div>
                 `;
                 
-                // Usiamo una closure per bloccare i dati correnti
-                (function(url, drm){
-                    card.onclick = async () => {
+                card.onclick = async () => {
+                    try {
                         await player.unload();
-                        player.configure({ drm: { clearKeys: drm } });
-                        await player.load(url);
+                        player.configure({ drm: { clearKeys: ch.drm } });
+                        await player.load(ch.url);
                         window.scrollTo({top: 0, behavior: 'smooth'});
-                    };
-                })(safeUrl, current.drm);
-
+                    } catch(e) { alert("Errore durante il caricamento del flusso video."); }
+                };
+                
                 grid.appendChild(card);
                 count++;
+                // Reset per il prossimo canale
                 current = { drm: {}, group: "ALTRI", name: "", logo: "" };
             }
         }
 
-        if (count === 0) {
-            chanCount.innerText = "ERRORE: FORMATO M3U NON RICONOSCIUTO";
-        } else {
-            chanCount.innerText = count + " CANALI CARICATI";
-        }
+        chanCount.innerText = count > 0 ? count + " CANALI CARICATI" : "FILE VUOTO O NON VALIDO";
 
     } catch (e) {
-        chanCount.innerText = "ERRORE DI RETE O FILE MANCANTE";
+        chanCount.innerText = "ERRORE: CONTROLLA SE LISTA.M3U È NELLA CARTELLA";
     }
 }
 document.addEventListener('shaka-ui-loaded', init);
+</script>
+</body>
+</html>
