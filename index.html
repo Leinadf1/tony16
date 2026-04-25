@@ -10,7 +10,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     
     <style>
-        /* CSS ESATTO DAL SECONDO PROGETTO */
         body { 
             background-color: #0d1117; 
             color: #c9d1d9; 
@@ -124,7 +123,6 @@
             line-height: 1.3;
         }
 
-        /* MEDIA QUERY ESATTA DAL SECONDO PROGETTO */
         @media (max-width: 600px) {
             .grid { 
                 grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); 
@@ -150,7 +148,6 @@
     <div id="main-list" style="width: 100%;"></div>
 
 <script>
-// LOGICA ORIGINALE DEL PRIMO PROGETTO
 const SOURCE_API = "/api/get-list";
 
 async function init() {
@@ -160,8 +157,12 @@ async function init() {
     const mainList = document.getElementById('main-list');
     const chanCount = document.getElementById('chan-count');
 
-    player.configure({ manifest: { dash: { ignoreDrmInfo: true } }, streaming: { jumpLargeGaps: true } });
+    player.configure({ 
+        manifest: { dash: { ignoreDrmInfo: true } }, 
+        streaming: { jumpLargeGaps: true } 
+    });
 
+    // Filtro per tentare di bypassare i blocchi CORS sui domini polacchi
     player.getNetworkingEngine().registerRequestFilter((type, request) => {
         if (request.uris[0].includes('pluscdn.pl') || request.uris[0].includes('t-mobile.pl')) {
             request.allowCrossOrigin = true;
@@ -179,20 +180,25 @@ async function init() {
 
         for (let line of lines) {
             line = line.trim();
+            
+            // LOGICA PER CHIAVI (Sia standard che KODIPROP)
             if (line.includes('license_key=')) {
-                if (line.includes('{')) {
-                    try { ch.drm = JSON.parse(line.split('license_key=')[1]); } catch(e) {}
+                const keyData = line.split('license_key=')[1];
+                if (keyData.startsWith('{')) {
+                    try { ch.drm = JSON.parse(keyData); } catch(e) { console.error("Errore JSON chiavi"); }
                 } else {
                     const m = line.match(/[a-f0-9]{32}/gi);
                     if (m && m.length >= 2) {
                         for (let i = 0; i < m.length; i += 2) { if (m[i+1]) ch.drm[m[i]] = m[i+1]; }
                     }
                 }
-            } else if (line.startsWith('#EXTINF:')) {
+            } 
+            else if (line.startsWith('#EXTINF:')) {
                 ch.logo = (line.match(/tvg-logo="([^"]+)"/i) || [])[1] || "";
                 ch.group = (line.match(/group-title="([^"]+)"/i) || [])[1] || "ALTRI";
                 ch.name = (line.match(/,(.*)/) || [])[1] || "Canale";
-            } else if (line.startsWith('http')) {
+            } 
+            else if (line.startsWith('http')) {
                 const url = line;
                 const currentCh = {...ch};
                 count++;
@@ -203,7 +209,6 @@ async function init() {
                 if (!grid) {
                     const container = document.createElement('div');
                     container.className = 'category-container';
-                    // Template categoria dal secondo progetto
                     container.innerHTML = `<div class="category-title">${currentCh.group.toUpperCase()}</div><div class="grid" id="${gridId}"></div>`;
                     mainList.appendChild(container);
                     grid = document.getElementById(gridId);
@@ -211,7 +216,6 @@ async function init() {
 
                 const card = document.createElement('div');
                 card.className = 'channel-card';
-                // Template card dal secondo progetto
                 card.innerHTML = `
                     <div class="logo-box"><img src="${currentCh.logo}" onerror="this.src='https://via.placeholder.com/150x80?text=TV'"></div>
                     <div class="info-box"><div class="name">${currentCh.name}</div></div>
@@ -221,13 +225,16 @@ async function init() {
                     document.querySelectorAll('.channel-card').forEach(c => c.classList.remove('active'));
                     card.classList.add('active');
                     await player.unload();
+                    
+                    // Configura DRM con le chiavi estratte (KODIPROP o standard)
                     player.configure({ drm: { clearKeys: currentCh.drm } });
+                    
                     const finalUrl = url.startsWith('http://') ? url.replace('http://', 'https://') : url;
                     await player.load(finalUrl);
                     window.scrollTo({top: 0, behavior: 'smooth'});
                 };
                 grid.appendChild(card);
-                ch = { drm: {} };
+                ch = { drm: {} }; // Reset per il prossimo canale
             }
         }
         chanCount.innerText = count + " CANALI";
