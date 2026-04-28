@@ -125,36 +125,6 @@ https://bpcdnmanprod.nexttv.ht.hr/bpk-tv/arena9/default/index.mpd
 #KODIPROP:inputstream.adaptive.license_key={"06376a4b5a09557cb3ad1ed4bdb677fe":"90ddef80ce78a710935c408ff6067611","03ed75ef7e4c56cb8f81cc17952fc554":"2be3b8e9f4756601e5b263beb14c5908","ea5736047df25edbb48bd055d48eb3dd":"8b40d3a415517224245a79e907cb8ef0","ee6860a6bf7a5f6c89bcf1794d16e25f":"b573f718f1551d2cf2a335ca778f5604"}
 https://bpcdnmanprod.nexttv.ht.hr/bpk-tv/arena10/default/index.mpd
 
-#EXTINF:-1 group-title="POLONIA" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/4/49/Eleven_Sports.png",Eleven Sports 1 4K
-#KODIPROP:inputstream.adaptive.manifest_type=mpd
-#KODIPROP:inputstream.adaptive.license_type=clearkey
-#KODIPROP:inputstream.adaptive.license_key={"ef5e40e00d43450bbeeb40c6849e0309":"614c349de0e08585c7b503568cacd5a1"}
-http://cdn-s-lb2.pluscdn.pl/ch/1522637/357/dash/b929c9fb/live.mpd
-
-#EXTINF:-1 group-title="POLONIA" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/4/49/Eleven_Sports.png",Eleven Sports 1
-#KODIPROP:inputstream.adaptive.manifest_type=mpd
-#KODIPROP:inputstream.adaptive.license_type=clearkey
-#KODIPROP:inputstream.adaptive.license_key={"525a9da2120045a6973709dbcd685609":"d8a7578d81ce754755a503ad8ac98ec0"}
-http://cdn-s-lb2.pluscdn.pl/ch/1457744/147/dash/4867711b/live.mpd
-
-#EXTINF:-1 group-title="POLONIA" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/4/49/Eleven_Sports.png",Eleven Sports 2
-#KODIPROP:inputstream.adaptive.manifest_type=mpd
-#KODIPROP:inputstream.adaptive.license_type=clearkey
-#KODIPROP:inputstream.adaptive.license_key={"2cd12eaca5c14b30a3280b1a89484809":"e2c14f6cc245c1a5ebbce8c8c704fc6c"}
-http://cdn-s-lb2.pluscdn.pl/ch/1457734/144/dash/0be7047a/live.mpd
-
-#EXTINF:-1 group-title="POLONIA" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/4/49/Eleven_Sports.png",Eleven Sports 3
-#KODIPROP:inputstream.adaptive.manifest_type=mpd
-#KODIPROP:inputstream.adaptive.license_type=clearkey
-#KODIPROP:inputstream.adaptive.license_key={"e006dab396714c0b9dd6228255c1b709":"2cdf44e960bbc4d276968012fe659272"}
-http://cdn-s-lb2.pluscdn.pl/ch/1457736/145/dash/58566515/live.mpd
-
-#EXTINF:-1 group-title="POLONIA" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/4/49/Eleven_Sports.png",Eleven Sports 4
-#KODIPROP:inputstream.adaptive.manifest_type=mpd
-#KODIPROP:inputstream.adaptive.license_type=clearkey
-#KODIPROP:inputstream.adaptive.license_key={"3e943ad288964c77917cc654fc60d109":"18cf07106507f411210c4a26d901a9e4"}
-http://cdn-s-lb2.pluscdn.pl/ch/1457740/146/dash/e653c27f/live.mpd
-
 #EXTINF:-1 group-title="POLONIA" tvg-logo="https://ipla.pluscdn.pl/p/cms_thumbnails/17/17s6gz9m8bsyjjnpa7phpzj8dpjy9v14.png",Eleven Sports 1
 #KODIPROP:inputstream.adaptive.manifest_type=mpd
 #KODIPROP:inputstream.adaptive.license_type=clearkey
