@@ -185,25 +185,25 @@ https://mag01.tvx.prd.tv.odido.nl/wh7f454c46tw865586829_-819821292/PLTV/86/224/3
 #KODIPROP:inputstream.adaptive.license_key={"1a0ffa532aa2498490826e2f6a37f7c9":"a8cec27bc7d47909c5b0d8f473b43e8d"}
 https://mag01.tvx.prd.tv.odido.nl/wh7f454c46tw1024019879_757686866/PLTV/86/224/3221241521/3221241521.mpd?zoneoffset=0&devkbps=1-7000&servicetype=1&icpid=86&accounttype=1&limitflux=-1&limitdur=-1&tenantId=3103&accountinfo=~~V2.0~URnD_afuosWHfY5OEqRXOwfa01c8ac56cf4511de39c2c4a3cab278~iVxKjbtf2gx_dYFqI-vt5C4Cu3COYDjZaw6C_kO2T2wm30fwo1ctD1gr_e2PrgTh48867c3177f3c34842031623cb2e06c9~ExtInfo5Ro3VppWiUusj2ippqUPkQ==4a2d2c8ce133f43026d0e31b822b8474:20240601014418:UTC,10001003329222,87.212.140.171,20240601014418,3103_S1E2,10001003329222,-1,0,1,,,2,3103_Sport1,,,2,10000044444303,0,10000025050255,NDEzODg2NTY3MzEwMzI2NzMwNjMwNTY=,,,5,1,END&GuardEncType=2&RTS=1717206258&from=14&hms_devid=538&online=1717206258&mag_hms=538&_=1717206265600
 
-#EXTINF:-1 group-title="MESSICO" tvg-logo="https://cdn6.aptoide.com/imgs/6/4/a/64acfb26233055c8b0e5defef092a670_icon.png",ESPN 1
+#EXTINF:-1 group-title="MESSICO" tvg-logo="https://static.wikia.nocookie.net/logopedia/images/3/34/ESPN.svg/revision/latest?cb=20201130040927",ESPN 1
 #KODIPROP:inputstream.adaptive.manifest_type=mpd
 #KODIPROP:inputstream.adaptive.license_type=clearkey
 #KODIPROP:inputstream.adaptive.license_key={"52358519f886446d82834a803b36f796":"58b6ac8e07d354b178255e03b9d0f819"}
 https://bks400-tol-110.quieroxview.com.mx/bpk-tv/espn_hd/default/index.mpd
 
-#EXTINF:-1 group-title="MESSICO" tvg-logo="https://cdn6.aptoide.com/imgs/6/4/a/64acfb26233055c8b0e5defef092a670_icon.png",ESPN 2
+#EXTINF:-1 group-title="MESSICO" tvg-logo="https://static.wikia.nocookie.net/logopedia/images/d/d5/ESPN2.svg/revision/latest?cb=20210609161318",ESPN 2
 #KODIPROP:inputstream.adaptive.manifest_type=mpd
 #KODIPROP:inputstream.adaptive.license_type=clearkey
 #KODIPROP:inputstream.adaptive.license_key={"52358519f886446d82834a803b36f796":"58b6ac8e07d354b178255e03b9d0f819"}
 https://bks400-tol-110.quieroxview.com.mx/bpk-tv/espn_2_hd/default/index.mpd
 
-#EXTINF:-1 group-title="MESSICO" tvg-logo="https://cdn6.aptoide.com/imgs/6/4/a/64acfb26233055c8b0e5defef092a670_icon.png",ESPN 3
+#EXTINF:-1 group-title="MESSICO" tvg-logo="https://static.wikia.nocookie.net/logopedia/images/1/11/ESPN3.svg/revision/latest?cb=20231118035609",ESPN 3
 #KODIPROP:inputstream.adaptive.manifest_type=mpd
 #KODIPROP:inputstream.adaptive.license_type=clearkey
 #KODIPROP:inputstream.adaptive.license_key={"0c39778fe8fb4f9f8574016b3d4ae2ed":"232b1f450f2e37f47fdd5b678a8a546d"}
 https://bks400-tol-110.quieroxview.com.mx/bpk-tv/espn_3_hd/default/index.mpd
 
-#EXTINF:-1 group-title="MESSICO" tvg-logo="https://cdn6.aptoide.com/imgs/6/4/a/64acfb26233055c8b0e5defef092a670_icon.png",ESPN 4
+#EXTINF:-1 group-title="MESSICO" tvg-logo="https://static.wikia.nocookie.net/logopedia/images/3/30/ESPN_4.svg/revision/latest?cb=20211120194330",ESPN 4
 #KODIPROP:inputstream.adaptive.manifest_type=mpd
 #KODIPROP:inputstream.adaptive.license_type=clearkey
 #KODIPROP:inputstream.adaptive.license_key={"0c39778fe8fb4f9f8574016b3d4ae2ed":"232b1f450f2e37f47fdd5b678a8a546d"}
