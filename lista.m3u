@@ -41,25 +41,25 @@ https://rr.cdn.vodafone.pt/LIVE/sdash/LIVE$566/index.mpd/Manifest.mpd?start=LIVE
 #KODIPROP:inputstream.adaptive.license_key=400957ac68d549fbbbbc668d3a9eb709:3dd351f1875b0dd40a4e392f06a29b29
 https://rr.cdn.vodafone.pt/LIVE/sdash/LIVE$597/index.mpd/Manifest.mpd?start=LIVE&end=END&device=DASH_AVC_HD
 
-#EXTINF:-1 group-title="PORTOGALLO" tvg-logo="https://static.wikia.nocookie.net/logopedia/images/1/18/DAZN_1_2024.svg/revision/latest?cb=20240713213358",DAZN 1 PT
+#EXTINF:-1 group-title="PORTOGALLO" tvg-logo="https://image.discovery.indazn.com/ca/v2/ca/image?id=1o4eamzb4env61ddc8wv4ra06l_image-header_pRow_1720521601000&quality=70",DAZN 1 PT
 #KODIPROP:inputstream.adaptive.manifest_type=mpd
 #KODIPROP:inputstream.adaptive.license_type=clearkey
 #KODIPROP:inputstream.adaptive.license_key={"39bcbc9418aa4d62b96b6a3eae2f6df0":"a8f968b6a8ed7bfb17bf787b6c930c7e"}
 https://rr.cdn.vodafone.pt/LIVE/sdash/LIVE$521/index.mpd/Manifest.mpd?start=LIVE&end=END&device=DASH_AVC_FULLHD
 
-#EXTINF:-1 group-title="PORTOGALLO" tvg-logo="https://static.wikia.nocookie.net/logopedia/images/8/82/DAZN_2_2024.svg/revision/latest?cb=20240713212845",DAZN 2 PT
+#EXTINF:-1 group-title="PORTOGALLO" tvg-logo="https://image.discovery.indazn.com/ca/v2/ca/image?id=6vqvum5g288n1lgqwvq6vlim1_image-header_pRow_1720521637000&quality=70",DAZN 2 PT
 #KODIPROP:inputstream.adaptive.manifest_type=mpd
 #KODIPROP:inputstream.adaptive.license_type=clearkey
 #KODIPROP:inputstream.adaptive.license_key={"3805cd533c1341a7934d13629eb7a34e":"2542564928cb8e3fe4595ab8dcfd6e77"}
 https://rr.cdn.vodafone.pt/LIVE/sdash/LIVE$522/index.mpd/Manifest.mpd?start=LIVE&end=END&device=DASH_AVC_FULLHD
 
-#EXTINF:-1 group-title="PORTOGALLO" tvg-logo="https://static.wikia.nocookie.net/logopedia/images/0/0f/DAZN_3_2024.svg/revision/latest?cb=20240713212252",DAZN 3 PT
+#EXTINF:-1 group-title="PORTOGALLO" tvg-logo="https://image.discovery.indazn.com/ca/v2/ca/image?id=1twx1j8a3gge219010n6o2qlgx_image-header_pRow_1720521671000&quality=70",DAZN 3 PT
 #KODIPROP:inputstream.adaptive.manifest_type=mpd
 #KODIPROP:inputstream.adaptive.license_type=clearkey
 #KODIPROP:inputstream.adaptive.license_key={"7224f2a6a14a4d88874d10dd953c88dc":"9719ea238d3de66eb073ce842814f464"}
 https://rr.cdn.vodafone.pt/LIVE/sdash/LIVE$523/index.mpd/Manifest.mpd?start=LIVE&end=END&device=DASH_AVC_FULLHD
 
-#EXTINF:-1 group-title="PORTOGALLO" tvg-logo="https://static.wikia.nocookie.net/logopedia/images/f/f7/DAZN_4_2024.svg/revision/latest?cb=20240713211915",DAZN 4 PT
+#EXTINF:-1 group-title="PORTOGALLO" tvg-logo="https://image.discovery.indazn.com/ca/v2/ca/image?id=a5inhkok5yrf1826le2ie3gxh_image-header_pRow_1720521702000",DAZN 4 PT
 #KODIPROP:inputstream.adaptive.manifest_type=mpd
 #KODIPROP:inputstream.adaptive.license_type=clearkey
 #KODIPROP:inputstream.adaptive.license_key={"0b6e5fe5b1d140b092e22cc662088276":"6bdd76adbc5bb25089983b2500dde7ca"}
