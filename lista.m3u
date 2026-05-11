@@ -95,6 +95,37 @@ https://otte.live.fly.ww.aiv-cdn.net/iad-nitro/live/clients/dash/enc/5sxuux529k/
 #KODIPROP:inputstream.adaptive.license_key={"192b1115da041585c77200128549efa1":"634e10efe4abbb14be400a3ccbac0258"}
 https://otte.live.fly.ww.aiv-cdn.net/iad-nitro/live/clients/dash/enc/pnu10tp36z/out/v1/912e9db56d75403b8a9ac0a719110f36/cenc.mpd
 
+#EXTINF:-1 group-title="CANADA" tvg-logo="https://static.wikia.nocookie.net/logopedia/images/6/68/TSN1_2014.svg/revision/latest?cb=20220218182931", TSN 1
+#KODIPROP:inputstream.adaptive.manifest_type=mpd
+#KODIPROP:inputstream.adaptive.license_type=clearkey
+#KODIPROP:inputstream.adaptive.license_key={"e51aa21f2a0fef9aabc120dfb655b52f":"a12a987fe725a40b6be95cd84b15f689"}
+https://live-pv-ta.amazon.fastly-edge.com/syd-nitro/live/clients/dash/enc/7janu55dwc/out/v1/69a2a7041395406b970598f61680e7cf/cenc.mpd
+
+#EXTINF:-1 group-title="CANADA" tvg-logo="https://static.wikia.nocookie.net/logopedia/images/c/c7/TSN2_2014.svg/revision/latest?cb=20220218183146", TSN 2
+#KODIPROP:inputstream.adaptive.manifest_type=mpd
+#KODIPROP:inputstream.adaptive.license_type=clearkey
+#KODIPROP:inputstream.adaptive.license_key={"daa8ea92553fd16cd6bfae2b8c582715":"4042e041b5639b79b69ae07a872eef9b"}
+https://live-pv-ta.amazon.fastly-edge.com/syd-nitro/live/clients/dash/enc/3n6slkgh54/out/v1/8977baf175da4b94873194613dd3fe55/cenc.mpd
+
+#EXTINF:-1 group-title="CANADA" tvg-logo="https://static.wikia.nocookie.net/logopedia/images/4/46/TSN3_2014.svg/revision/latest?cb=20220218183249", TSN 3
+#KODIPROP:inputstream.adaptive.manifest_type=mpd
+#KODIPROP:inputstream.adaptive.license_type=clearkey
+#KODIPROP:inputstream.adaptive.license_key={"f5c2b30eac11be1e8cdfc9585f5fe6af":"a8198d17bf9b0da77450fbb919a38b2d"}
+https://live-pv-ta.amazon.fastly-edge.com/syd-nitro/live/clients/dash/enc/lzhmuzmjsl/out/v1/c171eeb214c749f2b351c79df317b21e/cenc.mpd
+
+#EXTINF:-1 group-title="CANADA" tvg-logo="https://static.wikia.nocookie.net/logopedia/images/0/0b/TSN4_2014.svg/revision/latest?cb=20220218183358", TSN 4
+#KODIPROP:inputstream.adaptive.manifest_type=mpd
+#KODIPROP:inputstream.adaptive.license_type=clearkey
+#KODIPROP:inputstream.adaptive.license_key={"c4088f5f265f9de50cffd80bf89308b7":"2c4d2239d96d532b4ec2050653611003"}
+https://live-pv-ta.amazon.fastly-edge.com/syd-nitro/live/clients/dash/enc/h9urpo3cwb/out/v1/fde190f369484bc6b6117cc16cd82a9f/cenc.mpd
+
+#EXTINF:-1 group-title="CANADA" tvg-logo="https://static.wikia.nocookie.net/logopedia/images/c/c5/TSN5_2014.svg/revision/latest?cb=20220218183502", TSN 5
+#KODIPROP:inputstream.adaptive.manifest_type=mpd
+#KODIPROP:inputstream.adaptive.license_type=clearkey
+#KODIPROP:inputstream.adaptive.license_key={"e853333da2c9196ea11374634231bc45":"de2e2dbe818d78dfad07d6cd9a4c63d4"}
+https://live-pv-ta.amazon.fastly-edge.com/syd-nitro/live/clients/dash/enc/jkcljgqbx8/out/v1/63bfa701559340f3a2a2cb1fccd24807/cenc.mpd
+
+
 #EXTINF:-1 group-title="BOSNIA ED HERZEGOVINA" tvg-logo="https://i.ibb.co.com/sggNDR7/a1.png"",Arena Sport 1
 #KODIPROP:inputstream.adaptive.manifest_type=mpd
 #KODIPROP:inputstream.adaptive.license_type=clearkey
