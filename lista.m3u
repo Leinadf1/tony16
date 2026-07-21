@@ -10,8 +10,9 @@ https://rr.cdn.vodafone.pt/LIVE/sdash/LIVE$151/index.mpd/Manifest.mpd?start=LIVE
 #KODIPROP:inputstream.adaptive.manifest_type=mpd
 #KODIPROP:inputstream.adaptive.license_type=org.w3.clearkey
 #KODIPROP:inputstream.adaptive.license_key=6164a0abaa7c53c6875fa1e7fe0bb463:271510d3e1259571dcc568a232e397eb
-#KODIPROP:inputstream.adaptive.stream_headers=dazn-token=st%3D1784626202~exp%3D1784712602~acl%3D/%2A~id%3D621dca4e143e~data%3Dproto%3Ddash%23country%3Dit%23asn%3D210278%23path%3D1s%2C2d%23hashp%3D7146d3dea70044f8d191494cbaf9b170539059551a801458f7e9193ddef7835d%23hashua%3D286fc7e32b7b67d0baa2b54acae9b10c156131ceeeff494d50688993169e2c0e~hmac%3D9b396ef3d2c3a947d8997ad1cb1a99206331c86949de662acba041c63d402e2f
-https://dct-ak-livedazn.akamaized.net/dash/dazn-linear-206/stream.mpd?p=tv
+#KODIPROP:inputstream.adaptive.stream_headers=dazn-token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InV1aWRfMSJ9.eyJwYXRocyI6WyIvZGFzaC9kYXpuLWxpbmVhci0yMDYiXSwiZXhjIjpbXSwiaGVhZGVycyI6W10sImNvIjp0cnVlLCJpcCI6ZmFsc2UsImFzbiI6WyIyMTAyNzgiXSwiaW50c2lnIjoia0cxRjc0NlBKNjVLSHV0RmVyVkdSSllKYjZEUXBvR1Y1UC00SXBoVVd4RSIsImlhdCI6MTc4NDYyNTkzMiwiZXhwIjoxNzg0NzEyMzMyfQ.gKSZMO-rbPuvY4WvzBd1SLj2QgXWGII7_TuDp17EGp8
+#EXTVLCOPT:http-user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36
+https://dct-ac-live.cdn.indazn.com/dash/dazn-linear-206/stream.mpd?p=tv
 
 #EXTINF:-1 group-title="PORTOGALLO" tvg-logo="https://3038.images-vfp2.ott.kaltura.com/Service.svc/GetImage/p/3038/entry_id/886565c7d7714745880d938025a1610b/version/0",Sport TV 2
 #KODIPROP:inputstream.adaptive.manifest_type=mpd
