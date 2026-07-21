@@ -6,6 +6,14 @@
 #KODIPROP:inputstream.adaptive.license_key={"d012322fb2db4c929a66417c1fa40b00":"eac803603f1b2e4658e0f9da317fd05b"}
 https://rr.cdn.vodafone.pt/LIVE/sdash/LIVE$151/index.mpd/Manifest.mpd?start=LIVE&end=END&device=CMAFDASH_HEVC_UHD
 
+#EXTINF:-1 tvg-id="sxq07q8rseju1j7chnfc7w3if" tvg-name="DAZN 1" tvg-logo="https://image.discovery.indazn.com/eu/v3/eu/none/sxq07q8rseju1j7chnfc7w3if_image-header_pIt_1754467959000/fill/none/top/none/85/334/187/webp/image" group-title="DAZN Lineari",DAZN 1
+#KODIPROP:inputstream.adaptive.manifest_type=mpd
+#KODIPROP:inputstream.adaptive.license_type=org.w3.clearkey
+#KODIPROP:inputstream.adaptive.license_key=6164a0abaa7c53c6875fa1e7fe0bb463:271510d3e1259571dcc568a232e397eb
+#KODIPROP:inputstream.adaptive.stream_headers=dazn-token=st%3D1784626202~exp%3D1784712602~acl%3D/%2A~id%3D621dca4e143e~data%3Dproto%3Ddash%23country%3Dit%23asn%3D210278%23path%3D1s%2C2d%23hashp%3D7146d3dea70044f8d191494cbaf9b170539059551a801458f7e9193ddef7835d%23hashua%3D286fc7e32b7b67d0baa2b54acae9b10c156131ceeeff494d50688993169e2c0e~hmac%3D9b396ef3d2c3a947d8997ad1cb1a99206331c86949de662acba041c63d402e2f
+#EXTVLCOPT:http-user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36
+https://dct-ak-livedazn.akamaized.net/dash/dazn-linear-206/stream.mpd?p=tv
+
 #EXTINF:-1 group-title="PORTOGALLO" tvg-logo="https://3038.images-vfp2.ott.kaltura.com/Service.svc/GetImage/p/3038/entry_id/886565c7d7714745880d938025a1610b/version/0",Sport TV 2
 #KODIPROP:inputstream.adaptive.manifest_type=mpd
 #KODIPROP:inputstream.adaptive.license_type=org.w3.clearkey
