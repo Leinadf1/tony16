@@ -1,0 +1,48 @@
+name: Auto Generate DAZN M3U
+
+on:
+  schedule:
+    - cron: '*/16 * * * *' # Esegue lo script automaticamente ogni 16 minuti
+  workflow_dispatch: # Ti permette di avviarlo manualmente da GitHub con un click
+
+jobs:
+  run-dazn-script:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. Scarica il codice del repository
+    - name: Checkout del codice
+      uses: actions/checkout@v4
+
+    # 2. Connette il runner a Tailscale usando l'IP nascosto nei Secrets
+    - name: Connetti a Tailscale ed usa Exit Node
+      uses: tailscale/github-action@v2
+      with:
+        authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+        args: --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} --exit-node-allow-lan-access=true
+
+    # 3. Configura l'ambiente Python
+    - name: Configura Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    # 4. Installa le librerie richieste dallo script
+    - name: Installa Dipendenze Python
+      run: |
+        python -m pip install --upgrade pip
+        pip install pywidevine bs4 pyjwt colorama curl_cffi
+
+    # 5. Esegue lo script Python
+    - name: Esegui Script DAZN
+      run: |
+        python dazn.py
+
+    # 6. Salva e committa il file M3U generato direttamente sul tuo GitHub
+    - name: Commit e Push M3U aggiornato
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]'
+        git add dazn.m3u
+        git commit -m "Auto update DAZN M3U [skip ci]" || exit 0
+        git push
