@@ -41,6 +41,6 @@ jobs:
         run: |
           curl -s "https://gist.githubusercontent.com/raw/${GIST_ID}/dazn.py" -o dazn.py
 
-      - name: Run DAZN Script
+      - name: Run DAZN Script (non-interactive)
         run: |
-          echo "2" | python dazn.py
+          echo -e "1\n2\ny\n1\nn" | python -u dazn.py
