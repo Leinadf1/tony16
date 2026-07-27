@@ -42,5 +42,8 @@ jobs:
           curl -s "https://gist.githubusercontent.com/raw/${GIST_ID}/dazn.py" -o dazn.py
 
       - name: Run DAZN Script
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GIST_ID: ${{ secrets.GIST_ID }}
         run: |
           echo -e "1\n2\ny\nn" | python -u dazn.py
