@@ -24,12 +24,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install pywidevine bs4 pyjwt colorama curl_cffi requests
 
-      # Step opzionale per la VPN/Tailscale se ti serve connetterti alla rete di casa
-      # - name: Connect to Tailscale
-      #   uses: tailscale/github-action@v2
-      #   with:
-      #     oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-      #     tags: tag:ci
+      # Step Tailscale ATTIVATO (rimossi i #)
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
 
       - name: Download script from Gist
         env:
