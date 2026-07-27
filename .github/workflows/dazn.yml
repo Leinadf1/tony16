@@ -28,7 +28,19 @@ jobs:
         with:
           authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
           args: --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} --exit-node-allow-lan-access
-          # Niente --accept-dns=false (usa i DNS del nodo di uscita)
+          # Accetta DNS dal nodo di uscita (default true)
+
+      - name: Force DNS resolution via DoH and update /etc/hosts
+        run: |
+          # Ottieni IP via Cloudflare DoH (usa jq per estrarre l'IP)
+          IP_PLAYBACK=$(curl -s "https://cloudflare-dns.com/dns-query?name=playback.dazn.com&type=A" -H "accept: application/dns-json" | jq -r '.Answer[0].data')
+          IP_CATALOG=$(curl -s "https://cloudflare-dns.com/dns-query?name=catalog.dazn.com&type=A" -H "accept: application/dns-json" | jq -r '.Answer[0].data')
+          echo "playback.dazn.com -> $IP_PLAYBACK"
+          echo "catalog.dazn.com -> $IP_CATALOG"
+          # Scrivi in /etc/hosts (serve sudo)
+          sudo bash -c "echo '$IP_PLAYBACK playback.dazn.com' >> /etc/hosts"
+          sudo bash -c "echo '$IP_CATALOG catalog.dazn.com' >> /etc/hosts"
+          cat /etc/hosts  # debug
 
       - name: Download script from Gist
         env:
