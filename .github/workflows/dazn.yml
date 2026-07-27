@@ -2,8 +2,13 @@ name: DAZN M3U Auto Generator
 
 on:
   schedule:
-    - cron: '*/5 10-23 * * *'   # Ogni 16 minuti dalle 10:00 alle 23:59 UTC
-  workflow_dispatch:             # Avvio manuale sempre disponibile
+    - cron: '*/15 9-21 * * *'
+  workflow_dispatch:
+    inputs:
+      warp_mode:
+        description: 'Forza duplicazione WARP (true/false) - lascia vuoto per automatico'
+        required: false
+        default: ''
 
 jobs:
   build:
@@ -23,22 +28,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install pywidevine bs4 pyjwt colorama curl_cffi requests lxml
 
-      # ============================================================
-      # CONTROLLO: se oggi è già stato aggiornato, termina subito
-      # ============================================================
       - name: Check if already updated today
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GIST_ID: ${{ secrets.GIST_ID }}
         run: |
           echo "=== Controllo se oggi è già stato aggiornato ==="
-          
-          # Scarica il file dal Gist
           curl -s -H "Authorization: token $GH_TOKEN" \
                -H "Accept: application/vnd.github.v3+json" \
                "https://api.github.com/gists/$GIST_ID" > gist_data.json
-          
-          # Estrai il contenuto del file dazn.m3u
           cat gist_data.json | python3 -c "
           import sys, json
           data = json.load(sys.stdin)
@@ -46,11 +44,8 @@ jobs:
           if content:
               print(content)
           " > dazn_current.m3u
-          
-          # Cerca la data nel formato YYYY-MM-DD
           TODAY=$(date +%Y-%m-%d)
           echo "Data di oggi: $TODAY"
-          
           if grep -q "# Last update: $TODAY" dazn_current.m3u 2>/dev/null; then
               echo "✅ Aggiornamento già effettuato oggi ($TODAY). Termino il workflow."
               echo "skip=true" >> $GITHUB_ENV
@@ -58,10 +53,7 @@ jobs:
               echo "🔄 Nessun aggiornamento trovato per oggi. Procedo."
               echo "skip=false" >> $GITHUB_ENV
           fi
-          
-          # Mostra le prime 5 righe per debug
           head -5 dazn_current.m3u 2>/dev/null || echo "File non trovato o vuoto"
-          # ============================================================
 
       - name: Skip if already updated
         if: env.skip == 'true'
@@ -75,6 +67,35 @@ jobs:
         with:
           authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
           args: --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} --exit-node-allow-lan-access
+
+      # ============================================================
+      # RILEVAZIONE AUTOMATICA DI WARP
+      # ============================================================
+      - name: Check if Warp is active on exit node
+        if: env.skip != 'true' && github.event.inputs.warp_mode == ''
+        id: check_warp
+        run: |
+          echo "=== Verifica stato Warp sul PC (exit node) ==="
+          WARP_STATUS=$(curl -s --max-time 10 https://www.cloudflare.com/cdn-cgi/trace | grep -i "^warp=" | cut -d'=' -f2 | tr -d '[:space:]')
+          if [ "$WARP_STATUS" == "on" ]; then
+            echo "✅ Warp è attivo sul PC. Abilito duplicazione WARP."
+            echo "DUPLICATE_DAZN1_AS_WARP=true" >> $GITHUB_ENV
+          else
+            echo "❌ Warp NON è attivo sul PC. Solo canale normale."
+            echo "DUPLICATE_DAZN1_AS_WARP=false" >> $GITHUB_ENV
+          fi
+          echo "WARP_STATUS: $WARP_STATUS"
+      # ============================================================
+
+      # ============================================================
+      # SE FORZATO MANUALMENTE, USA IL VALORE INSERITO
+      # ============================================================
+      - name: Override Warp status from manual input
+        if: env.skip != 'true' && github.event.inputs.warp_mode != ''
+        run: |
+          echo "DUPLICATE_DAZN1_AS_WARP=${{ github.event.inputs.warp_mode }}" >> $GITHUB_ENV
+          echo "✅ Forzatura manuale: DUPLICATE_DAZN1_AS_WARP=${{ github.event.inputs.warp_mode }}"
+      # ============================================================
 
       - name: Download accountsdazn.json from Gist
         if: env.skip != 'true'
@@ -95,5 +116,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GIST_ID: ${{ secrets.GIST_ID }}
+          DUPLICATE_DAZN1_AS_WARP: ${{ env.DUPLICATE_DAZN1_AS_WARP }}
         run: |
+          echo "DUPLICATE_DAZN1_AS_WARP = $DUPLICATE_DAZN1_AS_WARP"
           echo -e "1\n2\ny\nn" | python -u dazn.py
