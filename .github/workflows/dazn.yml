@@ -32,13 +32,8 @@ jobs:
       - name: Download accountsdazn.json from Gist
         run: |
           curl -s -o accountsdazn.json "${{ secrets.ACCOUNTS_GIST_URL }}"
-          # Rimuovi BOM e newline Windows
           sed -i '1s/^\xEF\xBB\xBF//' accountsdazn.json
           sed -i 's/\r$//' accountsdazn.json
-          echo "=== accountsdazn.json ==="
-          cat accountsdazn.json
-          echo "=== Validazione JSON ==="
-          python -m json.tool accountsdazn.json
 
       - name: Download script from Gist
         env:
@@ -48,4 +43,4 @@ jobs:
 
       - name: Run DAZN Script
         run: |
-          python dazn.py
+          echo "2" | python dazn.py
