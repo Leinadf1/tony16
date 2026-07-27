@@ -4,7 +4,7 @@ on:
   schedule:
     # Esegue ogni 16 minuti
     - cron: '*/16 * * * *'
-  workflow_dispatch:
+  workflow_dispatch: # Permette l'avvio manuale
 
 jobs:
   build:
@@ -22,7 +22,7 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pywidevine bs4 pyjwt colorama curl_cffi requests dnspython
+          pip install pywidevine bs4 pyjwt colorama curl_cffi requests
 
       - name: Connect to Tailscale
         uses: tailscale/github-action@v2
@@ -30,9 +30,12 @@ jobs:
           authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
           args: --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} --exit-node-allow-lan-access --accept-dns=false
 
-      # STEP CHIAVE: Repristina e forza i DNS pubblici (Google/Cloudflare)
-      - name: Fix DNS Resolver
+      # Disabilita systemd-resolved e imposta DNS statici pubblici
+      - name: Force System DNS Resolver
         run: |
+          sudo systemctl stop systemd-resolved
+          sudo systemctl disable systemd-resolved
+          sudo rm -f /etc/resolv.conf
           sudo bash -c 'echo "nameserver 1.1.1.1" > /etc/resolv.conf'
           sudo bash -c 'echo "nameserver 8.8.8.8" >> /etc/resolv.conf'
 
