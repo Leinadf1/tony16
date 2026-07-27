@@ -28,12 +28,7 @@ jobs:
         with:
           authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
           args: --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} --exit-node-allow-lan-access
-
-      # STEP DI DIAGNOSTICA: Verifica quale IP sta usando il runner
-      - name: Check Public IP
-        run: |
-          echo "=== IP Pubblico Rilevato ==="
-          curl -s https://ipinfo.io/json || curl -s https://ifconfig.me
+          # Niente --accept-dns=false (usa i DNS del nodo di uscita)
 
       - name: Download script from Gist
         env:
