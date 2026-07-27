@@ -28,19 +28,10 @@ jobs:
         with:
           authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
           args: --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} --exit-node-allow-lan-access
-          # Accetta DNS dal nodo di uscita (default true)
 
-      - name: Force DNS resolution via DoH and update /etc/hosts
+      - name: Download accountsdazn.json from Gist
         run: |
-          # Ottieni IP via Cloudflare DoH (usa jq per estrarre l'IP)
-          IP_PLAYBACK=$(curl -s "https://cloudflare-dns.com/dns-query?name=playback.dazn.com&type=A" -H "accept: application/dns-json" | jq -r '.Answer[0].data')
-          IP_CATALOG=$(curl -s "https://cloudflare-dns.com/dns-query?name=catalog.dazn.com&type=A" -H "accept: application/dns-json" | jq -r '.Answer[0].data')
-          echo "playback.dazn.com -> $IP_PLAYBACK"
-          echo "catalog.dazn.com -> $IP_CATALOG"
-          # Scrivi in /etc/hosts (serve sudo)
-          sudo bash -c "echo '$IP_PLAYBACK playback.dazn.com' >> /etc/hosts"
-          sudo bash -c "echo '$IP_CATALOG catalog.dazn.com' >> /etc/hosts"
-          cat /etc/hosts  # debug
+          curl -s -o accountsdazn.json "${{ secrets.ACCOUNTS_GIST_URL }}"
 
       - name: Download script from Gist
         env:
@@ -49,11 +40,5 @@ jobs:
           curl -s "https://gist.githubusercontent.com/raw/${GIST_ID}/dazn.py" -o dazn.py
 
       - name: Run DAZN Script
-        env:
-          DAZN_USER: ${{ secrets.DAZN_USER }}
-          DAZN_PASS: ${{ secrets.DAZN_PASS }}
-          WVD_BASE64: ${{ secrets.WVD_BASE64 }}
-          GIST_ID: ${{ secrets.GIST_ID }}
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           python dazn.py
