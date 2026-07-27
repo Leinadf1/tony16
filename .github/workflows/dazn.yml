@@ -28,15 +28,58 @@ jobs:
           python -m pip install --upgrade pip
           pip install pywidevine bs4 pyjwt colorama curl_cffi requests lxml
 
-      - name: Check if already updated today
+      # ============================================================
+      # 1. CONNESSIONE A TAILSCALE (sempre, per rilevare Warp)
+      # ============================================================
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+          args: --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} --exit-node-allow-lan-access
+
+      # ============================================================
+      # 2. RILEVAZIONE AUTOMATICA DI WARP
+      # ============================================================
+      - name: Check if Warp is active on exit node
+        id: check_warp
+        run: |
+          echo "=== Verifica stato Warp sul PC (exit node) ==="
+          WARP_STATUS=$(curl -s --max-time 10 https://www.cloudflare.com/cdn-cgi/trace | grep -i "^warp=" | cut -d'=' -f2 | tr -d '[:space:]')
+          if [ "$WARP_STATUS" == "on" ]; then
+            echo "DUPLICATE_DAZN1_AS_WARP=true" >> $GITHUB_ENV
+            echo "✅ Warp è attivo sul PC."
+          else
+            echo "DUPLICATE_DAZN1_AS_WARP=false" >> $GITHUB_ENV
+            echo "❌ Warp NON è attivo sul PC."
+          fi
+
+      # ============================================================
+      # 3. SOVRASCRIVI DA INPUT MANUALE (SE FORNITO)
+      # ============================================================
+      - name: Override Warp status from manual input
+        if: github.event.inputs.warp_mode != ''
+        run: |
+          echo "DUPLICATE_DAZN1_AS_WARP=${{ github.event.inputs.warp_mode }}" >> $GITHUB_ENV
+          echo "✅ Forzatura manuale: DUPLICATE_DAZN1_AS_WARP=${{ github.event.inputs.warp_mode }}"
+
+      # ============================================================
+      # 4. CONTROLLO AGGIORNAMENTO CON LOGICA WARP
+      # ============================================================
+      - name: Check if should run (date + Warp override)
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GIST_ID: ${{ secrets.GIST_ID }}
+          DUPLICATE_DAZN1_AS_WARP: ${{ env.DUPLICATE_DAZN1_AS_WARP }}
         run: |
-          echo "=== Controllo se oggi è già stato aggiornato ==="
+          echo "=== Controllo se eseguire ==="
+          TODAY=$(date +%Y-%m-%d)
+          echo "Data di oggi: $TODAY"
+
+          # Scarica il file dal Gist
           curl -s -H "Authorization: token $GH_TOKEN" \
                -H "Accept: application/vnd.github.v3+json" \
                "https://api.github.com/gists/$GIST_ID" > gist_data.json
+
           cat gist_data.json | python3 -c "
           import sys, json
           data = json.load(sys.stdin)
@@ -44,59 +87,32 @@ jobs:
           if content:
               print(content)
           " > dazn_current.m3u
-          TODAY=$(date +%Y-%m-%d)
-          echo "Data di oggi: $TODAY"
+
           if grep -q "# Last update: $TODAY" dazn_current.m3u 2>/dev/null; then
-              echo "✅ Aggiornamento già effettuato oggi ($TODAY). Termino il workflow."
-              echo "skip=true" >> $GITHUB_ENV
-          else
-              echo "🔄 Nessun aggiornamento trovato per oggi. Procedo."
+            # Oggi già aggiornato
+            if [ "$DUPLICATE_DAZN1_AS_WARP" == "true" ]; then
+              echo "✅ Oggi già aggiornato, ma Warp è attivo: eseguo per generare canale WARP."
               echo "skip=false" >> $GITHUB_ENV
+            else
+              echo "⏭️ Oggi già aggiornato e Warp non attivo: salto."
+              echo "skip=true" >> $GITHUB_ENV
+            fi
+          else
+            echo "🔄 Nessun aggiornamento oggi: eseguo."
+            echo "skip=false" >> $GITHUB_ENV
           fi
+
           head -5 dazn_current.m3u 2>/dev/null || echo "File non trovato o vuoto"
 
       - name: Skip if already updated
         if: env.skip == 'true'
         run: |
-          echo "⏭️ Workflow terminato perché già aggiornato oggi."
+          echo "⏭️ Workflow terminato."
           exit 0
 
-      - name: Connect to Tailscale
-        if: env.skip != 'true'
-        uses: tailscale/github-action@v2
-        with:
-          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
-          args: --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} --exit-node-allow-lan-access
-
       # ============================================================
-      # RILEVAZIONE AUTOMATICA DI WARP
+      # 5. DOWNLOAD E ESECUZIONE SCRIPT
       # ============================================================
-      - name: Check if Warp is active on exit node
-        if: env.skip != 'true' && github.event.inputs.warp_mode == ''
-        id: check_warp
-        run: |
-          echo "=== Verifica stato Warp sul PC (exit node) ==="
-          WARP_STATUS=$(curl -s --max-time 10 https://www.cloudflare.com/cdn-cgi/trace | grep -i "^warp=" | cut -d'=' -f2 | tr -d '[:space:]')
-          if [ "$WARP_STATUS" == "on" ]; then
-            echo "✅ Warp è attivo sul PC. Abilito duplicazione WARP."
-            echo "DUPLICATE_DAZN1_AS_WARP=true" >> $GITHUB_ENV
-          else
-            echo "❌ Warp NON è attivo sul PC. Solo canale normale."
-            echo "DUPLICATE_DAZN1_AS_WARP=false" >> $GITHUB_ENV
-          fi
-          echo "WARP_STATUS: $WARP_STATUS"
-      # ============================================================
-
-      # ============================================================
-      # SE FORZATO MANUALMENTE, USA IL VALORE INSERITO
-      # ============================================================
-      - name: Override Warp status from manual input
-        if: env.skip != 'true' && github.event.inputs.warp_mode != ''
-        run: |
-          echo "DUPLICATE_DAZN1_AS_WARP=${{ github.event.inputs.warp_mode }}" >> $GITHUB_ENV
-          echo "✅ Forzatura manuale: DUPLICATE_DAZN1_AS_WARP=${{ github.event.inputs.warp_mode }}"
-      # ============================================================
-
       - name: Download accountsdazn.json from Gist
         if: env.skip != 'true'
         run: |
