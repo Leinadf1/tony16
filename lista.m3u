@@ -1,17 +1,11 @@
 #EXTM3U
 
-#EXTINF:-1 tvg-id="sxq07q8rseju1j7chnfc7w3if" tvg-name="DAZN 1" tvg-logo="https://image.discovery.indazn.com/eu/v3/eu/none/sxq07q8rseju1j7chnfc7w3if_image-header_pIt_1754467959000/fill/none/top/none/85/334/187/webp/image" group-title="DAZN Lineari",DAZN 1
+#EXTINF:-1 tvg-id="sxq07q8rseju1j7chnfc7w3if" tvg-name="DAZN 1" tvg-logo="https://static.wikia.nocookie.net/logopedia/images/1/18/DAZN_1_2024.svg" group-title="DAZN Lineari",DAZN 1
 #KODIPROP:inputstream.adaptive.manifest_type=mpd
 #KODIPROP:inputstream.adaptive.license_type=org.w3.clearkey
 #KODIPROP:inputstream.adaptive.license_key=6164a0abaa7c53c6875fa1e7fe0bb463:271510d3e1259571dcc568a232e397eb
 #EXTVLCOPT:http-user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36
-https://dct-ac-live.cdn.indazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InV1aWRfMSJ9.eyJwYXRocyI6WyIvZGFzaC9kYXpuLWxpbmVhci0yMDYiXSwiZXhjIjpbXSwiaGVhZGVycyI6W10sImNvIjp0cnVlLCJpcCI6ZmFsc2UsImFzbiI6WyIyMTAyNzgiXSwiaW50c2lnIjoia0cxRjc0NlBKNjVLSHV0RmVyVkdSSllKYjZEUXBvR1Y1UC00SXBoVVd4RSIsImlhdCI6MTc4NTE5MjI5OCwiZXhwIjoxNzg1Mjc4Njk4fQ.2NZVPr1hE4w2fKFJve9JNVjbLcH444s-QoHEJtr9vG0/dash/dazn-linear-206/stream.mpd?p=tv
-#EXTINF:-1 tvg-id="sxq07q8rseju1j7chnfc7w3if_warp" tvg-name="DAZN 1 WARP" tvg-logo="https://image.discovery.indazn.com/eu/v3/eu/none/sxq07q8rseju1j7chnfc7w3if_image-header_pIt_1754467959000/fill/none/top/none/85/334/187/webp/image" group-title="DAZN Lineari",DAZN 1 WARP
-#KODIPROP:inputstream.adaptive.manifest_type=mpd
-#KODIPROP:inputstream.adaptive.license_type=org.w3.clearkey
-#KODIPROP:inputstream.adaptive.license_key=6164a0abaa7c53c6875fa1e7fe0bb463:271510d3e1259571dcc568a232e397eb
-#EXTVLCOPT:http-user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36
-https://dct-ac-live.cdn.indazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InV1aWRfMSJ9.eyJwYXRocyI6WyIvZGFzaC9kYXpuLWxpbmVhci0yMDYiXSwiZXhjIjpbXSwiaGVhZGVycyI6W10sImNvIjp0cnVlLCJpcCI6ZmFsc2UsImFzbiI6WyIxMzMzNSJdLCJpbnRzaWciOiJTajdhRjhCcnpiMkljTzI4a0xKcldBcDQ3LV92SmRkanROOWw5VzBTdndNIiwiaWF0IjoxNzg1MTkyNDM3LCJleHAiOjE3ODUyNzg4Mzd9.aNvllxTcJKqK-3t91VvXMkdiMo0BLIqBOK2SuHxMA1I/dash/dazn-linear-206/stream.mpd?p=tv
+https://dcs-ac-live.cdn.indazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InV1aWRfMSJ9.eyJwYXRocyI6WyIvZGFzaC9kYXpuLWxpbmVhci0yMDYiXSwiZXhjIjpbXSwiaGVhZGVycyI6W10sImNvIjp0cnVlLCJpcCI6ZmFsc2UsImFzbiI6WyIyMTAyNzgiXSwiaW50c2lnIjoia0cxRjc0NlBKNjVLSHV0RmVyVkdSSllKYjZEUXBvR1Y1UC00SXBoVVd4RSIsImlhdCI6MTc4NTE5MzU1MiwiZXhwIjoxNzg1Mjc5OTUyfQ.LZZtujknpyR3OZLgWjE5Ln8JxppcLBfLrOOEEGDUuXs/dash/dazn-linear-206/stream.mpd?p=tv
 
 #EXTINF:-1 group-title="PORTOGALLO" tvg-logo="https://3038.images-vfp2.ott.kaltura.com/Service.svc/GetImage/p/3038/entry_id/e3a7169255414c35b01973e333e762e5/version/0",Sport TV 1
 #KODIPROP:inputstream.adaptive.manifest_type=mpd
