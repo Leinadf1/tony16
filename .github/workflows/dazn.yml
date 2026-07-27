@@ -2,7 +2,7 @@ name: DAZN M3U Auto Generator
 
 on:
   schedule:
-    - cron: '*/16 10-23 * * *'   # Ogni 16 minuti dalle 10:00 alle 23:59 UTC
+    - cron: '*/1 10-23 * * *'   # Ogni 16 minuti dalle 10:00 alle 23:59 UTC
   workflow_dispatch:             # Avvio manuale sempre disponibile
 
 jobs:
