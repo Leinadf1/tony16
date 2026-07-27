@@ -4,7 +4,7 @@ on:
   schedule:
     # Esegue ogni 16 minuti
     - cron: '*/16 * * * *'
-  workflow_dispatch: # Permette l'avvio manuale
+  workflow_dispatch: # Permette l'avvio manuale in qualsiasi momento
 
 jobs:
   build:
@@ -24,15 +24,18 @@ jobs:
           python -m pip install --upgrade pip
           pip install pywidevine bs4 pyjwt colorama curl_cffi requests
 
-      # (Opzionale) Inserisci qui lo step Tailscale se usi il tuo nodo di casa
+      # Step opzionale per la VPN/Tailscale se ti serve connetterti alla rete di casa
       # - name: Connect to Tailscale
       #   uses: tailscale/github-action@v2
-      #   ...
+      #   with:
+      #     oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+      #     tags: tag:ci
 
       - name: Download script from Gist
+        env:
+          GIST_ID: ${{ secrets.GIST_ID }}
         run: |
-          # Sostituisci il link qui sotto con il tuo URL RAW del Gist
-          curl -s https://gist.githubusercontent.com/tuo-utente/IL_TUO_GIST_ID/raw/dazn.py -o dazn.py
+          curl -s "https://gist.githubusercontent.com/raw/${GIST_ID}/dazn.py" -o dazn.py
 
       - name: Run DAZN Script
         env:
