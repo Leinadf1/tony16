@@ -2,8 +2,8 @@ name: DAZN M3U Auto Generator
 
 on:
   schedule:
-    - cron: '*/16 * * * *'
-  workflow_dispatch:
+    - cron: '*/16 10-23 * * *'   # Ogni 16 minuti dalle 10:00 alle 23:59 UTC
+  workflow_dispatch:             # Avvio manuale sempre disponibile
 
 jobs:
   build:
@@ -23,25 +23,75 @@ jobs:
           python -m pip install --upgrade pip
           pip install pywidevine bs4 pyjwt colorama curl_cffi requests lxml
 
+      # ============================================================
+      # CONTROLLO: se oggi è già stato aggiornato, termina subito
+      # ============================================================
+      - name: Check if already updated today
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GIST_ID: ${{ secrets.GIST_ID }}
+        run: |
+          echo "=== Controllo se oggi è già stato aggiornato ==="
+          
+          # Scarica il file dal Gist
+          curl -s -H "Authorization: token $GH_TOKEN" \
+               -H "Accept: application/vnd.github.v3+json" \
+               "https://api.github.com/gists/$GIST_ID" > gist_data.json
+          
+          # Estrai il contenuto del file dazn.m3u
+          cat gist_data.json | python3 -c "
+          import sys, json
+          data = json.load(sys.stdin)
+          content = data.get('files', {}).get('dazn.m3u', {}).get('content', '')
+          if content:
+              print(content)
+          " > dazn_current.m3u
+          
+          # Cerca la data nel formato YYYY-MM-DD
+          TODAY=$(date +%Y-%m-%d)
+          echo "Data di oggi: $TODAY"
+          
+          if grep -q "# Last update: $TODAY" dazn_current.m3u 2>/dev/null; then
+              echo "✅ Aggiornamento già effettuato oggi ($TODAY). Termino il workflow."
+              echo "skip=true" >> $GITHUB_ENV
+          else
+              echo "🔄 Nessun aggiornamento trovato per oggi. Procedo."
+              echo "skip=false" >> $GITHUB_ENV
+          fi
+          
+          # Mostra le prime 5 righe per debug
+          head -5 dazn_current.m3u 2>/dev/null || echo "File non trovato o vuoto"
+          # ============================================================
+
+      - name: Skip if already updated
+        if: env.skip == 'true'
+        run: |
+          echo "⏭️ Workflow terminato perché già aggiornato oggi."
+          exit 0
+
       - name: Connect to Tailscale
+        if: env.skip != 'true'
         uses: tailscale/github-action@v2
         with:
           authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
           args: --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} --exit-node-allow-lan-access
 
       - name: Download accountsdazn.json from Gist
+        if: env.skip != 'true'
         run: |
           curl -s -o accountsdazn.json "${{ secrets.ACCOUNTS_GIST_URL }}"
           sed -i '1s/^\xEF\xBB\xBF//' accountsdazn.json
           sed -i 's/\r$//' accountsdazn.json
 
       - name: Download script from Gist
+        if: env.skip != 'true'
         env:
           GIST_ID: ${{ secrets.GIST_ID }}
         run: |
           curl -s "https://gist.githubusercontent.com/raw/${GIST_ID}/dazn.py" -o dazn.py
 
       - name: Run DAZN Script
+        if: env.skip != 'true'
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GIST_ID: ${{ secrets.GIST_ID }}
