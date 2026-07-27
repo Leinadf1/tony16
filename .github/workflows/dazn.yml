@@ -4,7 +4,7 @@ on:
   schedule:
     # Esegue ogni 16 minuti
     - cron: '*/16 * * * *'
-  workflow_dispatch: # Permette l'avvio manuale in qualsiasi momento
+  workflow_dispatch: # Permette l'avvio manuale
 
 jobs:
   build:
@@ -24,11 +24,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install pywidevine bs4 pyjwt colorama curl_cffi requests
 
+      # Connessione Tailscale con risoluzione DNS di fallback
       - name: Connect to Tailscale
         uses: tailscale/github-action@v2
         with:
           authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
-          args: --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} --exit-node-allow-lan-access
+          args: --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} --exit-node-allow-lan-access --accept-dns=false
 
       - name: Download script from Gist
         env:
