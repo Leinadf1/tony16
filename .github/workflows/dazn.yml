@@ -4,7 +4,7 @@ on:
   schedule:
     # Esegue ogni 16 minuti
     - cron: '*/16 * * * *'
-  workflow_dispatch: # Permette l'avvio manuale
+  workflow_dispatch:
 
 jobs:
   build:
@@ -22,14 +22,19 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pywidevine bs4 pyjwt colorama curl_cffi requests
+          pip install pywidevine bs4 pyjwt colorama curl_cffi requests dnspython
 
-      # Connessione Tailscale con risoluzione DNS di fallback
       - name: Connect to Tailscale
         uses: tailscale/github-action@v2
         with:
           authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
           args: --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} --exit-node-allow-lan-access --accept-dns=false
+
+      # STEP CHIAVE: Repristina e forza i DNS pubblici (Google/Cloudflare)
+      - name: Fix DNS Resolver
+        run: |
+          sudo bash -c 'echo "nameserver 1.1.1.1" > /etc/resolv.conf'
+          sudo bash -c 'echo "nameserver 8.8.8.8" >> /etc/resolv.conf'
 
       - name: Download script from Gist
         env:
