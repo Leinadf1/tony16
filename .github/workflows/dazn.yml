@@ -24,12 +24,20 @@ jobs:
           pip install pywidevine bs4 pyjwt colorama curl_cffi requests lxml
 
       # ============================================================
+      # INSTALLA TAILSCALE MANUALMENTE
+      # ============================================================
+      - name: Install Tailscale
+        run: |
+          curl -fsSL https://tailscale.com/install.sh | sh
+          echo "✅ Tailscale installato."
+
+      # ============================================================
       # CONNESSIONE A TAILSCALE CON TIMEOUT (45 secondi)
-      # Se fallisce, il workflow termina (i passi successivi non partono)
+      # Se fallisce (PC spento), il workflow termina con exit 1
       # ============================================================
       - name: Connect to Tailscale (timeout 45s)
         id: tailscale_connect
-        continue-on-error: false  # Se fallisce, il workflow si ferma
+        continue-on-error: false
         run: |
           echo "=== Connessione a Tailscale (timeout 45s) ==="
           if timeout 45s tailscale up \
@@ -37,31 +45,68 @@ jobs:
             --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} \
             --exit-node-allow-lan-access; then
             echo "✅ Connessione Tailscale completata."
+            echo "connected=true" >> $GITHUB_OUTPUT
           else
-            echo "❌ Connessione Tailscale fallita o timeout (PC spento o irraggiungibile)."
-            echo "Termino il workflow."
-            exit 1  # Questo fa fallire il passo e blocca il workflow
+            echo "❌ Connessione Tailscale fallita (PC spento). Termino."
+            echo "connected=false" >> $GITHUB_OUTPUT
+            exit 1
           fi
-      # ============================================================
 
       # ============================================================
-      # SE SIAMO ARRIVATI QUI, LA CONNESSIONE È RIUSCITA
+      # VERIFICA STATO WARP (solo se connessi)
+      # ============================================================
+      - name: Check Warp status
+        id: check_warp
+        if: steps.tailscale_connect.outputs.connected == 'true'
+        run: |
+          echo "=== Verifica stato Warp ==="
+          WARP_STATUS=$(curl -s --max-time 10 https://www.cloudflare.com/cdn-cgi/trace | grep -i "^warp=" | cut -d'=' -f2 | tr -d '[:space:]')
+          if [ "$WARP_STATUS" == "on" ]; then
+            echo "✅ Warp attivo."
+            echo "warp_active=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Warp non attivo."
+            echo "warp_active=false" >> $GITHUB_OUTPUT
+          fi
+
+      # ============================================================
+      # DOWNLOAD DEI FILE DAL GIST
       # ============================================================
       - name: Download accountsdazn.json from Gist
+        if: steps.tailscale_connect.outputs.connected == 'true'
         run: |
           curl -s -o accountsdazn.json "${{ secrets.ACCOUNTS_GIST_URL }}"
           sed -i '1s/^\xEF\xBB\xBF//' accountsdazn.json
           sed -i 's/\r$//' accountsdazn.json
 
-      - name: Download script from Gist
+      - name: Download scripts from Gist
+        if: steps.tailscale_connect.outputs.connected == 'true'
         env:
           GIST_ID: ${{ secrets.GIST_ID }}
         run: |
           curl -s "https://gist.githubusercontent.com/raw/${GIST_ID}/dazn.py" -o dazn.py
+          curl -s "https://gist.githubusercontent.com/raw/${GIST_ID}/dazn_events.py" -o dazn_events.py
 
-      - name: Run DAZN Script
+      # ============================================================
+      # 1. SCRIPT DAZN 1 (sempre eseguito se PC acceso)
+      # ============================================================
+      - name: Run DAZN 1 Script
+        if: steps.tailscale_connect.outputs.connected == 'true'
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GIST_ID: ${{ secrets.GIST_ID }}
         run: |
+          echo "=== Esecuzione DAZN 1 ==="
           python -u dazn.py
+
+      # ============================================================
+      # 2. SCRIPT EVENTI (solo se Warp attivo)
+      # ============================================================
+      - name: Run DAZN Events Script
+        if: steps.tailscale_connect.outputs.connected == 'true' && steps.check_warp.outputs.warp_active == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GIST_ID: ${{ secrets.GIST_ID }}
+        run: |
+          echo "=== Esecuzione DAZN Events (Warp attivo) ==="
+          python -u dazn_events.py
