@@ -105,7 +105,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GIST_ID: ${{ secrets.GIST_ID }}
-          ENABLE_VOD_TEST: "true"
         run: |
           echo "=== Esecuzione DAZN Events (Warp attivo) ==="
           python -u dazn_events.py
