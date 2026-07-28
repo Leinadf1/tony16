@@ -23,23 +23,21 @@ jobs:
           python -m pip install --upgrade pip
           pip install pywidevine bs4 pyjwt colorama curl_cffi requests lxml
 
-      - name: Connect to Tailscale
-        uses: tailscale/github-action@v2
-        with:
-          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
-          args: --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} --exit-node-allow-lan-access
-
       # ============================================================
-      # CONTROLLO RAPIDO: PC è raggiungibile?
+      # CONNESSIONE A TAILSCALE CON TIMEOUT (45 secondi)
       # ============================================================
-      - name: Check if exit node (PC) is reachable
+      - name: Connect to Tailscale (timeout 45s)
         run: |
-          echo "=== Verifica se il PC (exit node) è raggiungibile ==="
-          if ! tailscale ping --timeout=5s ${{ secrets.TAILSCALE_EXIT_NODE_IP }}; then
-            echo "❌ PC non raggiungibile (spento o offline). Termino il workflow."
-            exit 0
-          fi
-          echo "✅ PC raggiungibile. Procedo con l'aggiornamento."
+          echo "=== Connessione a Tailscale (timeout 45s) ==="
+          # Prova a connetterti con un timeout massimo di 45 secondi
+          timeout 45s tailscale up \
+            --authkey=${{ secrets.TAILSCALE_AUTHKEY }} \
+            --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} \
+            --exit-node-allow-lan-access || {
+              echo "❌ Connessione Tailscale fallita o timeout (PC spento o irraggiungibile). Termino il workflow."
+              exit 0
+            }
+          echo "✅ Connessione Tailscale completata."
       # ============================================================
 
       - name: Download accountsdazn.json from Gist
