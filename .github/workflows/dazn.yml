@@ -24,20 +24,43 @@ jobs:
           pip install pywidevine bs4 pyjwt colorama curl_cffi requests lxml
 
       # ============================================================
-      # CONNESSIONE A TAILSCALE CON TIMEOUT (45 secondi)
+      # TENTATIVO DI CONNESSIONE A TAILSCALE CON TIMEOUT (45s)
       # ============================================================
       - name: Connect to Tailscale (timeout 45s)
+        id: tailscale_connect
         run: |
           echo "=== Connessione a Tailscale (timeout 45s) ==="
-          # Prova a connetterti con un timeout massimo di 45 secondi
-          timeout 45s tailscale up \
+          if timeout 45s tailscale up \
             --authkey=${{ secrets.TAILSCALE_AUTHKEY }} \
             --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} \
-            --exit-node-allow-lan-access || {
-              echo "❌ Connessione Tailscale fallita o timeout (PC spento o irraggiungibile). Termino il workflow."
-              exit 0
-            }
-          echo "✅ Connessione Tailscale completata."
+            --exit-node-allow-lan-access; then
+            echo "✅ Connessione Tailscale completata."
+            echo "connected=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Connessione Tailscale fallita o timeout (PC spento o irraggiungibile)."
+            echo "connected=false" >> $GITHUB_OUTPUT
+          fi
+
+      # ============================================================
+      # SE LA CONNESSIONE È FALLITA, TERMINA IL WORKFLOW
+      # ============================================================
+      - name: Exit if Tailscale not connected
+        if: steps.tailscale_connect.outputs.connected == 'false'
+        run: |
+          echo "⏭️ Workflow terminato (PC non raggiungibile)."
+          exit 0
+      # ============================================================
+
+      # ============================================================
+      # VERIFICA ULTERIORE: tailscale status
+      # ============================================================
+      - name: Verify Tailscale status
+        run: |
+          if ! tailscale status; then
+            echo "❌ Tailscale non è attivo (status fallito). Termino."
+            exit 0
+          fi
+          echo "✅ Tailscale attivo."
       # ============================================================
 
       - name: Download accountsdazn.json from Gist
