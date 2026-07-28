@@ -33,21 +33,21 @@ jobs:
 
       # ============================================================
       # CONNESSIONE A TAILSCALE CON TIMEOUT (45 secondi)
-      # Se fallisce (PC spento), il workflow termina con exit 1
+      # NOTA: usa sudo perché Tailscale richiede privilegi di root
       # ============================================================
       - name: Connect to Tailscale (timeout 45s)
         id: tailscale_connect
         continue-on-error: false
         run: |
           echo "=== Connessione a Tailscale (timeout 45s) ==="
-          if timeout 45s tailscale up \
+          if timeout 45s sudo tailscale up \
             --authkey=${{ secrets.TAILSCALE_AUTHKEY }} \
             --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} \
             --exit-node-allow-lan-access; then
             echo "✅ Connessione Tailscale completata."
             echo "connected=true" >> $GITHUB_OUTPUT
           else
-            echo "❌ Connessione Tailscale fallita (PC spento). Termino."
+            echo "❌ Connessione Tailscale fallita (PC spento o errore). Termino."
             echo "connected=false" >> $GITHUB_OUTPUT
             exit 1
           fi
