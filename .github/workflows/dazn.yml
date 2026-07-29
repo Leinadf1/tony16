@@ -22,29 +22,52 @@ jobs:
           pip install pywidevine bs4 pyjwt colorama curl_cffi requests lxml
 
       # ============================================================
-      # INSTALLA TAILSCALE MANUALMENTE
+      # CONTROLLO RAPIDO: PC RAGGIUNGIBILE? (PING)
+      # ============================================================
+      - name: Check if exit node is reachable
+        id: ping_check
+        run: |
+          if ping -c 1 -W 2 ${{ secrets.TAILSCALE_EXIT_NODE_IP }} > /dev/null 2>&1; then
+            echo "✅ PC raggiungibile."
+            echo "reachable=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ PC non raggiungibile (spento o offline)."
+            echo "reachable=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Exit if node not reachable
+        if: steps.ping_check.outputs.reachable == 'false'
+        run: |
+          echo "⏭️ Workflow terminato (PC spento)."
+          exit 0
+      # ============================================================
+
+      # ============================================================
+      # INSTALLA TAILSCALE (solo se PC raggiungibile)
       # ============================================================
       - name: Install Tailscale
+        if: steps.ping_check.outputs.reachable == 'true'
         run: |
           curl -fsSL https://tailscale.com/install.sh | sh
           echo "✅ Tailscale installato."
 
       # ============================================================
-      # CONNESSIONE A TAILSCALE CON TIMEOUT (45 secondi)
+      # CONNESSIONE A TAILSCALE CON TIMEOUT (30 secondi)
       # ============================================================
-      - name: Connect to Tailscale (timeout 45s)
+      - name: Connect to Tailscale (timeout 30s)
         id: tailscale_connect
+        if: steps.ping_check.outputs.reachable == 'true'
         continue-on-error: false
         run: |
-          echo "=== Connessione a Tailscale (timeout 45s) ==="
-          if timeout 45s sudo tailscale up \
+          echo "=== Connessione a Tailscale (timeout 30s) ==="
+          if timeout 30s sudo tailscale up \
             --authkey=${{ secrets.TAILSCALE_AUTHKEY }} \
             --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} \
             --exit-node-allow-lan-access; then
             echo "✅ Connessione Tailscale completata."
             echo "connected=true" >> $GITHUB_OUTPUT
           else
-            echo "❌ Connessione Tailscale fallita (PC spento o errore). Termino."
+            echo "❌ Connessione Tailscale fallita (timeout o errore)."
             echo "connected=false" >> $GITHUB_OUTPUT
             exit 1
           fi
