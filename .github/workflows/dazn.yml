@@ -27,42 +27,27 @@ jobs:
           echo "✅ Tailscale installato."
 
       # ============================================================
-      # VERIFICA RAPIDA: il PC (exit node) è raggiungibile?
-      # Usa netcheck con timeout 5 secondi
+      # CONNESSIONE TAILSCALE CON TIMEOUT FORZATO (5 secondi)
       # ============================================================
-      - name: Check if exit node is reachable (netcheck)
-        id: check_peer
+      - name: Connect to Tailscale (timeout 5s)
+        id: tailscale_connect
         continue-on-error: false
         run: |
-          echo "=== Verifica raggiungibilità PC (netcheck) ==="
-          # Prova a raggiungere il peer con un timeout di 5 secondi
-          if timeout 5s sudo tailscale netcheck --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }}; then
-            echo "✅ PC raggiungibile."
-            echo "reachable=true" >> $GITHUB_OUTPUT
+          echo "=== Connessione a Tailscale (timeout 5s) ==="
+          if timeout -k 2s 5s sudo tailscale up \
+            --authkey=${{ secrets.TAILSCALE_AUTHKEY }} \
+            --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} \
+            --exit-node-allow-lan-access; then
+            echo "✅ Connessione Tailscale completata."
+            echo "connected=true" >> $GITHUB_OUTPUT
           else
-            echo "❌ PC non raggiungibile (spento o offline)."
-            echo "reachable=false" >> $GITHUB_OUTPUT
+            echo "❌ Connessione Tailscale fallita (PC spento o timeout)."
+            echo "connected=false" >> $GITHUB_OUTPUT
             exit 1
           fi
 
       # ============================================================
-      # SE IL PC È RAGGIUNGIBILE, CONNETTI TAILSCALE (veloce)
-      # ============================================================
-      - name: Connect to Tailscale
-        id: tailscale_connect
-        if: steps.check_peer.outputs.reachable == 'true'
-        continue-on-error: false
-        run: |
-          echo "=== Connessione a Tailscale ==="
-          sudo tailscale up \
-            --authkey=${{ secrets.TAILSCALE_AUTHKEY }} \
-            --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} \
-            --exit-node-allow-lan-access
-          echo "✅ Connessione Tailscale completata."
-          echo "connected=true" >> $GITHUB_OUTPUT
-
-      # ============================================================
-      # SE SIAMO QUI, TAILSCALE È CONNESSO
+      # VERIFICA STATO WARP (solo se connessi)
       # ============================================================
       - name: Check Warp status
         id: check_warp
