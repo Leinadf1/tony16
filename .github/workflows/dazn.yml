@@ -21,41 +21,30 @@ jobs:
           python -m pip install --upgrade pip
           pip install pywidevine bs4 pyjwt colorama curl_cffi requests lxml
 
-      # ============================================================
-      # INSTALLA TAILSCALE
-      # ============================================================
       - name: Install Tailscale
         run: |
           curl -fsSL https://tailscale.com/install.sh | sh
           echo "✅ Tailscale installato."
 
       # ============================================================
-      # CONNESSIONE TAILSCALE CON UCCISIONE FORZATA DOPO 5s
-      # Se il PC è spento, il processo viene killato e il workflow fallisce in ~5s
+      # CONNESSIONE TAILSCALE CON TIMEOUT (30 secondi)
       # ============================================================
-      - name: Connect to Tailscale (kill after 5s)
+      - name: Connect to Tailscale (timeout 30s)
         id: tailscale_connect
         continue-on-error: false
         run: |
-          echo "=== Connessione a Tailscale (kill after 5s) ==="
-          sudo tailscale up \
+          echo "=== Connessione a Tailscale (timeout 30s) ==="
+          if timeout -k 5s 30s sudo tailscale up \
             --authkey=${{ secrets.TAILSCALE_AUTHKEY }} \
             --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} \
-            --exit-node-allow-lan-access &
-          TAILSCALE_PID=$!
-          sleep 5
-          if kill -0 $TAILSCALE_PID 2>/dev/null; then
-            echo "❌ Connessione Tailscale supera i 5 secondi, termino."
-            sudo kill -9 $TAILSCALE_PID 2>/dev/null || true
+            --exit-node-allow-lan-access; then
+            echo "✅ Connessione Tailscale completata."
+            echo "connected=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Connessione Tailscale fallita (timeout o errore)."
+            echo "connected=false" >> $GITHUB_OUTPUT
             exit 1
           fi
-          wait $TAILSCALE_PID
-          if [ $? -ne 0 ]; then
-            echo "❌ Connessione Tailscale fallita."
-            exit 1
-          fi
-          echo "✅ Connessione Tailscale completata."
-          echo "connected=true" >> $GITHUB_OUTPUT
 
       # ============================================================
       # SE LA CONNESSIONE È FALLITA, IL WORKFLOW SI FERMA QUI
