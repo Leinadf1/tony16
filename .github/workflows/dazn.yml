@@ -28,29 +28,33 @@ jobs:
 
       # ============================================================
       # CONNESSIONE TAILSCALE CON TIMEOUT FORZATO (5 secondi)
-      # - timeout 5s: aspetta 5 secondi
-      # - -k 2s: dopo 2 secondi extra manda SIGKILL
       # ============================================================
       - name: Connect to Tailscale (forced timeout 5s)
         id: tailscale_connect
         continue-on-error: false
         run: |
           echo "=== Connessione a Tailscale (timeout 5s) ==="
-          if timeout -k 2s 5s sudo tailscale up \
+          sudo tailscale up \
             --authkey=${{ secrets.TAILSCALE_AUTHKEY }} \
             --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} \
-            --exit-node-allow-lan-access; then
+            --exit-node-allow-lan-access &
+          TAILSCALE_PID=$!
+          sleep 5
+          if kill -0 $TAILSCALE_PID 2>/dev/null; then
+            echo "❌ Connessione Tailscale supera i 5 secondi, termino."
+            sudo kill -9 $TAILSCALE_PID 2>/dev/null || true
+            exit 1
+          else
+            wait $TAILSCALE_PID
+            if [ $? -ne 0 ]; then
+              echo "❌ Connessione Tailscale fallita."
+              exit 1
+            fi
             echo "✅ Connessione Tailscale completata."
             echo "connected=true" >> $GITHUB_OUTPUT
-          else
-            echo "❌ Connessione Tailscale fallita (PC spento o timeout)."
-            echo "connected=false" >> $GITHUB_OUTPUT
-            exit 1
           fi
+      # ============================================================
 
-      # ============================================================
-      # VERIFICA STATO WARP (solo se connessi)
-      # ============================================================
       - name: Check Warp status
         id: check_warp
         if: steps.tailscale_connect.outputs.connected == 'true'
@@ -65,9 +69,6 @@ jobs:
             echo "warp_active=false" >> $GITHUB_OUTPUT
           fi
 
-      # ============================================================
-      # DOWNLOAD DEI FILE DAL GIST
-      # ============================================================
       - name: Download accountsdazn.json from Gist
         if: steps.tailscale_connect.outputs.connected == 'true'
         run: |
@@ -83,9 +84,6 @@ jobs:
           curl -s "https://gist.githubusercontent.com/raw/${GIST_ID}/dazn.py" -o dazn.py
           curl -s "https://gist.githubusercontent.com/raw/${GIST_ID}/dazn_events.py" -o dazn_events.py
 
-      # ============================================================
-      # 1. SCRIPT DAZN 1 (sempre eseguito se PC acceso)
-      # ============================================================
       - name: Run DAZN 1 Script
         if: steps.tailscale_connect.outputs.connected == 'true'
         env:
@@ -96,9 +94,6 @@ jobs:
           echo "=== Esecuzione DAZN 1 ==="
           python -u dazn.py
 
-      # ============================================================
-      # 2. SCRIPT EVENTI (solo se Warp attivo)
-      # ============================================================
       - name: Run DAZN Events Script
         if: steps.tailscale_connect.outputs.connected == 'true' && steps.check_warp.outputs.warp_active == 'true'
         env:
