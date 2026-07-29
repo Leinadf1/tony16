@@ -22,7 +22,7 @@ jobs:
           pip install pywidevine bs4 pyjwt colorama curl_cffi requests lxml
 
       # ============================================================
-      # INSTALLA TAILSCALE (PRIMA di qualsiasi controllo)
+      # INSTALLA TAILSCALE MANUALMENTE
       # ============================================================
       - name: Install Tailscale
         run: |
@@ -30,49 +30,31 @@ jobs:
           echo "✅ Tailscale installato."
 
       # ============================================================
-      # TENTATIVO DI CONNESSIONE A TAILSCALE CON TIMEOUT (30s)
+      # CONNESSIONE A TAILSCALE CON TIMEOUT (45 secondi)
       # ============================================================
-      - name: Connect to Tailscale (timeout 30s)
+      - name: Connect to Tailscale (timeout 45s)
         id: tailscale_connect
         continue-on-error: false
         run: |
-          echo "=== Connessione a Tailscale (timeout 30s) ==="
-          if timeout 30s sudo tailscale up \
+          echo "=== Connessione a Tailscale (timeout 45s) ==="
+          if timeout 45s sudo tailscale up \
             --authkey=${{ secrets.TAILSCALE_AUTHKEY }} \
             --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} \
             --exit-node-allow-lan-access; then
             echo "✅ Connessione Tailscale completata."
             echo "connected=true" >> $GITHUB_OUTPUT
           else
-            echo "❌ Connessione Tailscale fallita (timeout o errore)."
+            echo "❌ Connessione Tailscale fallita (PC spento o errore). Termino."
             echo "connected=false" >> $GITHUB_OUTPUT
             exit 1
           fi
 
       # ============================================================
-      # VERIFICA RAGGIUNGIBILITÀ PC VIA TAILSCALE (dopo connessione)
-      # ============================================================
-      - name: Check if exit node is reachable
-        id: reachability_check
-        if: steps.tailscale_connect.outputs.connected == 'true'
-        run: |
-          echo "=== Verifica raggiungibilità PC via Tailscale ==="
-          if tailscale ping --timeout=2s ${{ secrets.TAILSCALE_EXIT_NODE_IP }}; then
-            echo "✅ PC raggiungibile via Tailscale."
-            echo "reachable=true" >> $GITHUB_OUTPUT
-          else
-            echo "❌ PC non raggiungibile (spento o offline). Termino."
-            echo "reachable=false" >> $GITHUB_OUTPUT
-            exit 1
-          fi
-      # ============================================================
-
-      # ============================================================
-      # VERIFICA STATO WARP (solo se PC raggiungibile)
+      # VERIFICA STATO WARP (solo se connessi)
       # ============================================================
       - name: Check Warp status
         id: check_warp
-        if: steps.reachability_check.outputs.reachable == 'true'
+        if: steps.tailscale_connect.outputs.connected == 'true'
         run: |
           echo "=== Verifica stato Warp ==="
           WARP_STATUS=$(curl -s --max-time 10 https://www.cloudflare.com/cdn-cgi/trace | grep -i "^warp=" | cut -d'=' -f2 | tr -d '[:space:]')
@@ -88,14 +70,14 @@ jobs:
       # DOWNLOAD DEI FILE DAL GIST
       # ============================================================
       - name: Download accountsdazn.json from Gist
-        if: steps.reachability_check.outputs.reachable == 'true'
+        if: steps.tailscale_connect.outputs.connected == 'true'
         run: |
           curl -s -o accountsdazn.json "${{ secrets.ACCOUNTS_GIST_URL }}"
           sed -i '1s/^\xEF\xBB\xBF//' accountsdazn.json
           sed -i 's/\r$//' accountsdazn.json
 
       - name: Download scripts from Gist
-        if: steps.reachability_check.outputs.reachable == 'true'
+        if: steps.tailscale_connect.outputs.connected == 'true'
         env:
           GIST_ID: ${{ secrets.GIST_ID }}
         run: |
@@ -103,10 +85,10 @@ jobs:
           curl -s "https://gist.githubusercontent.com/raw/${GIST_ID}/dazn_events.py" -o dazn_events.py
 
       # ============================================================
-      # 1. SCRIPT DAZN 1 (sempre eseguito se PC raggiungibile)
+      # 1. SCRIPT DAZN 1 (sempre eseguito se PC acceso)
       # ============================================================
       - name: Run DAZN 1 Script
-        if: steps.reachability_check.outputs.reachable == 'true'
+        if: steps.tailscale_connect.outputs.connected == 'true'
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GIST_ID: ${{ secrets.GIST_ID }}
@@ -116,10 +98,10 @@ jobs:
           python -u dazn.py
 
       # ============================================================
-      # 2. SCRIPT EVENTI (solo se Warp attivo E PC raggiungibile)
+      # 2. SCRIPT EVENTI (solo se Warp attivo)
       # ============================================================
       - name: Run DAZN Events Script
-        if: steps.reachability_check.outputs.reachable == 'true' && steps.check_warp.outputs.warp_active == 'true'
+        if: steps.tailscale_connect.outputs.connected == 'true' && steps.check_warp.outputs.warp_active == 'true'
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GIST_ID: ${{ secrets.GIST_ID }}
