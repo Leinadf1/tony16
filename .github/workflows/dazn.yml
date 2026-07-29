@@ -21,6 +21,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install pywidevine bs4 pyjwt colorama curl_cffi requests lxml
 
+      # ============================================================
+      # INSTALLA TAILSCALE
+      # ============================================================
       - name: Install Tailscale
         run: |
           curl -fsSL https://tailscale.com/install.sh | sh
@@ -28,60 +31,77 @@ jobs:
 
       # ============================================================
       # CONNESSIONE TAILSCALE CON UCCISIONE FORZATA DOPO 5s
+      # Se il PC è spento, il processo viene killato e il workflow fallisce in ~5s
       # ============================================================
       - name: Connect to Tailscale (kill after 5s)
         id: tailscale_connect
         continue-on-error: false
         run: |
           echo "=== Connessione a Tailscale (kill after 5s) ==="
-          # Avvia tailscale up in background
           sudo tailscale up \
             --authkey=${{ secrets.TAILSCALE_AUTHKEY }} \
             --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} \
             --exit-node-allow-lan-access &
           TAILSCALE_PID=$!
-          # Aspetta 5 secondi
           sleep 5
-          # Controlla se il processo è ancora in esecuzione
           if kill -0 $TAILSCALE_PID 2>/dev/null; then
             echo "❌ Connessione Tailscale supera i 5 secondi, termino."
             sudo kill -9 $TAILSCALE_PID 2>/dev/null || true
             exit 1
-          else
-            wait $TAILSCALE_PID
-            if [ $? -ne 0 ]; then
-              echo "❌ Connessione Tailscale fallita."
-              exit 1
-            fi
-            echo "✅ Connessione Tailscale completata."
-            echo "connected=true" >> $GITHUB_OUTPUT
           fi
+          wait $TAILSCALE_PID
+          if [ $? -ne 0 ]; then
+            echo "❌ Connessione Tailscale fallita."
+            exit 1
+          fi
+          echo "✅ Connessione Tailscale completata."
+          echo "connected=true" >> $GITHUB_OUTPUT
 
+      # ============================================================
+      # SE LA CONNESSIONE È FALLITA, IL WORKFLOW SI FERMA QUI
+      # ============================================================
+      - name: Exit if not connected
+        if: steps.tailscale_connect.outputs.connected != 'true'
+        run: |
+          echo "❌ Tailscale non connesso. Termino."
+          exit 1
+
+      # ============================================================
+      # VERIFICA RAGGIUNGIBILITÀ PC (dopo connessione)
+      # ============================================================
       - name: Check if exit node is reachable
         id: reachability_check
-        if: steps.tailscale_connect.outputs.connected == 'true'
         run: |
           echo "=== Verifica raggiungibilità PC via Tailscale ==="
           if tailscale ping --timeout=2s ${{ secrets.TAILSCALE_EXIT_NODE_IP }}; then
-            echo "✅ PC raggiungibile."
+            echo "✅ PC raggiungibile via Tailscale."
             echo "reachable=true" >> $GITHUB_OUTPUT
           else
-            echo "❌ PC non raggiungibile."
+            echo "❌ PC non raggiungibile (spento o offline). Termino."
             echo "reachable=false" >> $GITHUB_OUTPUT
             exit 1
           fi
 
+      # ============================================================
+      # VERIFICA STATO WARP (solo se PC raggiungibile)
+      # ============================================================
       - name: Check Warp status
         id: check_warp
         if: steps.reachability_check.outputs.reachable == 'true'
         run: |
+          echo "=== Verifica stato Warp ==="
           WARP_STATUS=$(curl -s --max-time 10 https://www.cloudflare.com/cdn-cgi/trace | grep -i "^warp=" | cut -d'=' -f2 | tr -d '[:space:]')
           if [ "$WARP_STATUS" == "on" ]; then
+            echo "✅ Warp attivo."
             echo "warp_active=true" >> $GITHUB_OUTPUT
           else
+            echo "❌ Warp non attivo."
             echo "warp_active=false" >> $GITHUB_OUTPUT
           fi
 
+      # ============================================================
+      # DOWNLOAD DEI FILE DAL GIST
+      # ============================================================
       - name: Download accountsdazn.json from Gist
         if: steps.reachability_check.outputs.reachable == 'true'
         run: |
@@ -97,6 +117,9 @@ jobs:
           curl -s "https://gist.githubusercontent.com/raw/${GIST_ID}/dazn.py" -o dazn.py
           curl -s "https://gist.githubusercontent.com/raw/${GIST_ID}/dazn_events.py" -o dazn_events.py
 
+      # ============================================================
+      # 1. SCRIPT DAZN 1 (sempre eseguito se PC raggiungibile)
+      # ============================================================
       - name: Run DAZN 1 Script
         if: steps.reachability_check.outputs.reachable == 'true'
         env:
@@ -104,12 +127,17 @@ jobs:
           GIST_ID: ${{ secrets.GIST_ID }}
           DUPLICATE_DAZN1_AS_WARP: ${{ steps.check_warp.outputs.warp_active }}
         run: |
+          echo "=== Esecuzione DAZN 1 ==="
           python -u dazn.py
 
+      # ============================================================
+      # 2. SCRIPT EVENTI (solo se Warp attivo E PC raggiungibile)
+      # ============================================================
       - name: Run DAZN Events Script
         if: steps.reachability_check.outputs.reachable == 'true' && steps.check_warp.outputs.warp_active == 'true'
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GIST_ID: ${{ secrets.GIST_ID }}
         run: |
+          echo "=== Esecuzione DAZN Events (Warp attivo) ==="
           python -u dazn_events.py
