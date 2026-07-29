@@ -21,22 +21,19 @@ jobs:
           python -m pip install --upgrade pip
           pip install pywidevine bs4 pyjwt colorama curl_cffi requests lxml
 
-      # ============================================================
-      # INSTALLA TAILSCALE
-      # ============================================================
       - name: Install Tailscale
         run: |
           curl -fsSL https://tailscale.com/install.sh | sh
           echo "✅ Tailscale installato."
 
       # ============================================================
-      # CONNESSIONE TAILSCALE CON TIMEOUT FORZATO (5 secondi)
+      # CONNESSIONE TAILSCALE CON UCCISIONE FORZATA DOPO 5s
       # ============================================================
-      - name: Connect to Tailscale (forced timeout 5s)
+      - name: Connect to Tailscale (kill after 5s)
         id: tailscale_connect
         continue-on-error: false
         run: |
-          echo "=== Connessione a Tailscale (timeout 5s) ==="
+          echo "=== Connessione a Tailscale (kill after 5s) ==="
           # Avvia tailscale up in background
           sudo tailscale up \
             --authkey=${{ secrets.TAILSCALE_AUTHKEY }} \
@@ -60,43 +57,31 @@ jobs:
             echo "connected=true" >> $GITHUB_OUTPUT
           fi
 
-      # ============================================================
-      # VERIFICA RAGGIUNGIBILITÀ PC (dopo connessione)
-      # ============================================================
       - name: Check if exit node is reachable
         id: reachability_check
         if: steps.tailscale_connect.outputs.connected == 'true'
         run: |
           echo "=== Verifica raggiungibilità PC via Tailscale ==="
           if tailscale ping --timeout=2s ${{ secrets.TAILSCALE_EXIT_NODE_IP }}; then
-            echo "✅ PC raggiungibile via Tailscale."
+            echo "✅ PC raggiungibile."
             echo "reachable=true" >> $GITHUB_OUTPUT
           else
-            echo "❌ PC non raggiungibile (spento o offline). Termino."
+            echo "❌ PC non raggiungibile."
             echo "reachable=false" >> $GITHUB_OUTPUT
             exit 1
           fi
 
-      # ============================================================
-      # VERIFICA STATO WARP (solo se PC raggiungibile)
-      # ============================================================
       - name: Check Warp status
         id: check_warp
         if: steps.reachability_check.outputs.reachable == 'true'
         run: |
-          echo "=== Verifica stato Warp ==="
           WARP_STATUS=$(curl -s --max-time 10 https://www.cloudflare.com/cdn-cgi/trace | grep -i "^warp=" | cut -d'=' -f2 | tr -d '[:space:]')
           if [ "$WARP_STATUS" == "on" ]; then
-            echo "✅ Warp attivo."
             echo "warp_active=true" >> $GITHUB_OUTPUT
           else
-            echo "❌ Warp non attivo."
             echo "warp_active=false" >> $GITHUB_OUTPUT
           fi
 
-      # ============================================================
-      # DOWNLOAD DEI FILE DAL GIST
-      # ============================================================
       - name: Download accountsdazn.json from Gist
         if: steps.reachability_check.outputs.reachable == 'true'
         run: |
@@ -112,9 +97,6 @@ jobs:
           curl -s "https://gist.githubusercontent.com/raw/${GIST_ID}/dazn.py" -o dazn.py
           curl -s "https://gist.githubusercontent.com/raw/${GIST_ID}/dazn_events.py" -o dazn_events.py
 
-      # ============================================================
-      # 1. SCRIPT DAZN 1
-      # ============================================================
       - name: Run DAZN 1 Script
         if: steps.reachability_check.outputs.reachable == 'true'
         env:
@@ -122,17 +104,12 @@ jobs:
           GIST_ID: ${{ secrets.GIST_ID }}
           DUPLICATE_DAZN1_AS_WARP: ${{ steps.check_warp.outputs.warp_active }}
         run: |
-          echo "=== Esecuzione DAZN 1 ==="
           python -u dazn.py
 
-      # ============================================================
-      # 2. SCRIPT EVENTI (solo se Warp attivo)
-      # ============================================================
       - name: Run DAZN Events Script
         if: steps.reachability_check.outputs.reachable == 'true' && steps.check_warp.outputs.warp_active == 'true'
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GIST_ID: ${{ secrets.GIST_ID }}
         run: |
-          echo "=== Esecuzione DAZN Events (Warp attivo) ==="
           python -u dazn_events.py
