@@ -31,7 +31,6 @@ jobs:
 
       # ============================================================
       # CONNESSIONE A TAILSCALE CON TIMEOUT (45 secondi)
-      # NOTA: usa sudo perché Tailscale richiede privilegi di root
       # ============================================================
       - name: Connect to Tailscale (timeout 45s)
         id: tailscale_connect
@@ -93,6 +92,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GIST_ID: ${{ secrets.GIST_ID }}
+          DUPLICATE_DAZN1_AS_WARP: ${{ steps.check_warp.outputs.warp_active }}
         run: |
           echo "=== Esecuzione DAZN 1 ==="
           python -u dazn.py
