@@ -30,24 +30,28 @@ jobs:
           echo "✅ Tailscale installato."
 
       # ============================================================
-      # CONNESSIONE A TAILSCALE CON TIMEOUT (45 secondi)
+      # CONNESSIONE A TAILSCALE CON TIMEOUT (10 secondi)
+      # Se il PC è spento, il comando viene ucciso in ~10 secondi
       # ============================================================
-      - name: Connect to Tailscale (timeout 45s)
+      - name: Connect to Tailscale (timeout 10s)
         id: tailscale_connect
         continue-on-error: false
         run: |
-          echo "=== Connessione a Tailscale (timeout 45s) ==="
-          if timeout 45s sudo tailscale up \
+          echo "=== Connessione a Tailscale (timeout 10s) ==="
+          timeout --kill-after=2s 10s sudo tailscale up \
             --authkey=${{ secrets.TAILSCALE_AUTHKEY }} \
             --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} \
-            --exit-node-allow-lan-access; then
-            echo "✅ Connessione Tailscale completata."
-            echo "connected=true" >> $GITHUB_OUTPUT
-          else
-            echo "❌ Connessione Tailscale fallita (PC spento o errore). Termino."
-            echo "connected=false" >> $GITHUB_OUTPUT
+            --exit-node-allow-lan-access
+          if [ $? -ne 0 ]; then
+            echo "❌ Connessione Tailscale fallita (timeout o errore)."
             exit 1
           fi
+          if ! tailscale status > /dev/null 2>&1; then
+            echo "❌ Tailscale non connesso."
+            exit 1
+          fi
+          echo "✅ Connessione Tailscale completata."
+          echo "connected=true" >> $GITHUB_OUTPUT
 
       # ============================================================
       # VERIFICA STATO WARP (solo se connessi)
