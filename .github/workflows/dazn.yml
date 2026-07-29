@@ -21,20 +21,23 @@ jobs:
           python -m pip install --upgrade pip
           pip install pywidevine bs4 pyjwt colorama curl_cffi requests lxml
 
+      # ============================================================
+      # INSTALLA TAILSCALE (PRIMA di qualsiasi controllo)
+      # ============================================================
       - name: Install Tailscale
         run: |
           curl -fsSL https://tailscale.com/install.sh | sh
           echo "✅ Tailscale installato."
 
       # ============================================================
-      # CONNESSIONE TAILSCALE CON TIMEOUT (30 secondi)
+      # TENTATIVO DI CONNESSIONE A TAILSCALE CON TIMEOUT (30s)
       # ============================================================
       - name: Connect to Tailscale (timeout 30s)
         id: tailscale_connect
         continue-on-error: false
         run: |
           echo "=== Connessione a Tailscale (timeout 30s) ==="
-          if timeout -k 5s 30s sudo tailscale up \
+          if timeout 30s sudo tailscale up \
             --authkey=${{ secrets.TAILSCALE_AUTHKEY }} \
             --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} \
             --exit-node-allow-lan-access; then
@@ -47,19 +50,11 @@ jobs:
           fi
 
       # ============================================================
-      # SE LA CONNESSIONE È FALLITA, IL WORKFLOW SI FERMA QUI
-      # ============================================================
-      - name: Exit if not connected
-        if: steps.tailscale_connect.outputs.connected != 'true'
-        run: |
-          echo "❌ Tailscale non connesso. Termino."
-          exit 1
-
-      # ============================================================
-      # VERIFICA RAGGIUNGIBILITÀ PC (dopo connessione)
+      # VERIFICA RAGGIUNGIBILITÀ PC VIA TAILSCALE (dopo connessione)
       # ============================================================
       - name: Check if exit node is reachable
         id: reachability_check
+        if: steps.tailscale_connect.outputs.connected == 'true'
         run: |
           echo "=== Verifica raggiungibilità PC via Tailscale ==="
           if tailscale ping --timeout=2s ${{ secrets.TAILSCALE_EXIT_NODE_IP }}; then
@@ -70,6 +65,7 @@ jobs:
             echo "reachable=false" >> $GITHUB_OUTPUT
             exit 1
           fi
+      # ============================================================
 
       # ============================================================
       # VERIFICA STATO WARP (solo se PC raggiungibile)
