@@ -21,41 +21,40 @@ jobs:
           python -m pip install --upgrade pip
           pip install pywidevine bs4 pyjwt colorama curl_cffi requests lxml
 
-      # ============================================================
-      # INSTALLA TAILSCALE MANUALMENTE
-      # ============================================================
       - name: Install Tailscale
         run: |
           curl -fsSL https://tailscale.com/install.sh | sh
           echo "✅ Tailscale installato."
 
       # ============================================================
-      # CONNESSIONE A TAILSCALE CON TIMEOUT (10 secondi)
-      # Se il PC è spento, il comando viene ucciso in ~10 secondi
+      # CONNESSIONE TAILSCALE CON TIMEOUT FORZATO (10 secondi)
       # ============================================================
       - name: Connect to Tailscale (timeout 10s)
         id: tailscale_connect
         continue-on-error: false
         run: |
           echo "=== Connessione a Tailscale (timeout 10s) ==="
-          timeout --kill-after=2s 10s sudo tailscale up \
+          sudo tailscale up \
             --authkey=${{ secrets.TAILSCALE_AUTHKEY }} \
             --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} \
-            --exit-node-allow-lan-access
-          if [ $? -ne 0 ]; then
-            echo "❌ Connessione Tailscale fallita (timeout o errore)."
+            --exit-node-allow-lan-access &
+          PID=$!
+          sleep 10
+          if kill -0 $PID 2>/dev/null; then
+            echo "❌ Connessione Tailscale supera i 10 secondi, termino."
+            sudo kill -9 $PID 2>/dev/null || true
             exit 1
+          else
+            wait $PID
+            if [ $? -ne 0 ]; then
+              echo "❌ Connessione Tailscale fallita."
+              exit 1
+            fi
+            echo "✅ Connessione Tailscale completata."
+            echo "connected=true" >> $GITHUB_OUTPUT
           fi
-          if ! tailscale status > /dev/null 2>&1; then
-            echo "❌ Tailscale non connesso."
-            exit 1
-          fi
-          echo "✅ Connessione Tailscale completata."
-          echo "connected=true" >> $GITHUB_OUTPUT
+      # ============================================================
 
-      # ============================================================
-      # VERIFICA STATO WARP (solo se connessi)
-      # ============================================================
       - name: Check Warp status
         id: check_warp
         if: steps.tailscale_connect.outputs.connected == 'true'
@@ -70,9 +69,6 @@ jobs:
             echo "warp_active=false" >> $GITHUB_OUTPUT
           fi
 
-      # ============================================================
-      # DOWNLOAD DEI FILE DAL GIST
-      # ============================================================
       - name: Download accountsdazn.json from Gist
         if: steps.tailscale_connect.outputs.connected == 'true'
         run: |
@@ -88,9 +84,6 @@ jobs:
           curl -s "https://gist.githubusercontent.com/raw/${GIST_ID}/dazn.py" -o dazn.py
           curl -s "https://gist.githubusercontent.com/raw/${GIST_ID}/dazn_events.py" -o dazn_events.py
 
-      # ============================================================
-      # 1. SCRIPT DAZN 1 (sempre eseguito se PC acceso)
-      # ============================================================
       - name: Run DAZN 1 Script
         if: steps.tailscale_connect.outputs.connected == 'true'
         env:
@@ -101,9 +94,6 @@ jobs:
           echo "=== Esecuzione DAZN 1 ==="
           python -u dazn.py
 
-      # ============================================================
-      # 2. SCRIPT EVENTI (solo se Warp attivo)
-      # ============================================================
       - name: Run DAZN Events Script
         if: steps.tailscale_connect.outputs.connected == 'true' && steps.check_warp.outputs.warp_active == 'true'
         env:
