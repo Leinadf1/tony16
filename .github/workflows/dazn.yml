@@ -22,7 +22,7 @@ jobs:
           pip install pywidevine bs4 pyjwt colorama curl_cffi requests lxml
 
       # ============================================================
-      # INSTALLA TAILSCALE (PRIMA di qualsiasi controllo)
+      # INSTALLA TAILSCALE
       # ============================================================
       - name: Install Tailscale
         run: |
@@ -30,27 +30,38 @@ jobs:
           echo "✅ Tailscale installato."
 
       # ============================================================
-      # TENTATIVO DI CONNESSIONE A TAILSCALE CON TIMEOUT (30s)
+      # CONNESSIONE TAILSCALE CON TIMEOUT FORZATO (5 secondi)
       # ============================================================
-      - name: Connect to Tailscale (timeout 30s)
+      - name: Connect to Tailscale (forced timeout 5s)
         id: tailscale_connect
         continue-on-error: false
         run: |
-          echo "=== Connessione a Tailscale (timeout 30s) ==="
-          if timeout 30s sudo tailscale up \
+          echo "=== Connessione a Tailscale (timeout 5s) ==="
+          # Avvia tailscale up in background
+          sudo tailscale up \
             --authkey=${{ secrets.TAILSCALE_AUTHKEY }} \
             --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} \
-            --exit-node-allow-lan-access; then
+            --exit-node-allow-lan-access &
+          TAILSCALE_PID=$!
+          # Aspetta 5 secondi
+          sleep 5
+          # Controlla se il processo è ancora in esecuzione
+          if kill -0 $TAILSCALE_PID 2>/dev/null; then
+            echo "❌ Connessione Tailscale supera i 5 secondi, termino."
+            sudo kill -9 $TAILSCALE_PID 2>/dev/null || true
+            exit 1
+          else
+            wait $TAILSCALE_PID
+            if [ $? -ne 0 ]; then
+              echo "❌ Connessione Tailscale fallita."
+              exit 1
+            fi
             echo "✅ Connessione Tailscale completata."
             echo "connected=true" >> $GITHUB_OUTPUT
-          else
-            echo "❌ Connessione Tailscale fallita (timeout o errore)."
-            echo "connected=false" >> $GITHUB_OUTPUT
-            exit 1
           fi
 
       # ============================================================
-      # VERIFICA RAGGIUNGIBILITÀ PC VIA TAILSCALE (dopo connessione)
+      # VERIFICA RAGGIUNGIBILITÀ PC (dopo connessione)
       # ============================================================
       - name: Check if exit node is reachable
         id: reachability_check
@@ -65,7 +76,6 @@ jobs:
             echo "reachable=false" >> $GITHUB_OUTPUT
             exit 1
           fi
-      # ============================================================
 
       # ============================================================
       # VERIFICA STATO WARP (solo se PC raggiungibile)
@@ -103,7 +113,7 @@ jobs:
           curl -s "https://gist.githubusercontent.com/raw/${GIST_ID}/dazn_events.py" -o dazn_events.py
 
       # ============================================================
-      # 1. SCRIPT DAZN 1 (sempre eseguito se PC raggiungibile)
+      # 1. SCRIPT DAZN 1
       # ============================================================
       - name: Run DAZN 1 Script
         if: steps.reachability_check.outputs.reachable == 'true'
@@ -116,7 +126,7 @@ jobs:
           python -u dazn.py
 
       # ============================================================
-      # 2. SCRIPT EVENTI (solo se Warp attivo E PC raggiungibile)
+      # 2. SCRIPT EVENTI (solo se Warp attivo)
       # ============================================================
       - name: Run DAZN Events Script
         if: steps.reachability_check.outputs.reachable == 'true' && steps.check_warp.outputs.warp_active == 'true'
