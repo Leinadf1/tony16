@@ -22,7 +22,7 @@ jobs:
           pip install pywidevine bs4 pyjwt colorama curl_cffi requests lxml
 
       # ============================================================
-      # INSTALLA TAILSCALE (PRIMA di qualsiasi controllo)
+      # INSTALLA TAILSCALE
       # ============================================================
       - name: Install Tailscale
         run: |
@@ -30,34 +30,41 @@ jobs:
           echo "✅ Tailscale installato."
 
       # ============================================================
-      # TENTATIVO DI CONNESSIONE A TAILSCALE CON TIMEOUT (30s)
+      # CONNESSIONE TAILSCALE CON TIMEOUT FORZATO (5 secondi)
       # ============================================================
-      - name: Connect to Tailscale (timeout 30s)
+      - name: Connect to Tailscale (kill after 5s)
         id: tailscale_connect
         continue-on-error: false
         run: |
-          echo "=== Connessione a Tailscale (timeout 30s) ==="
-          if timeout 30s sudo tailscale up \
+          echo "=== Connessione a Tailscale (kill after 5s) ==="
+          sudo tailscale up \
             --authkey=${{ secrets.TAILSCALE_AUTHKEY }} \
             --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} \
-            --exit-node-allow-lan-access; then
-            echo "✅ Connessione Tailscale completata."
-            echo "connected=true" >> $GITHUB_OUTPUT
-          else
-            echo "❌ Connessione Tailscale fallita (timeout o errore)."
-            echo "connected=false" >> $GITHUB_OUTPUT
+            --exit-node-allow-lan-access &
+          TAILSCALE_PID=$!
+          sleep 5
+          if kill -0 $TAILSCALE_PID 2>/dev/null; then
+            echo "❌ Connessione Tailscale supera i 5 secondi, termino."
+            sudo kill -9 $TAILSCALE_PID 2>/dev/null || true
             exit 1
           fi
+          wait $TAILSCALE_PID
+          if [ $? -ne 0 ]; then
+            echo "❌ Connessione Tailscale fallita."
+            exit 1
+          fi
+          echo "✅ Connessione Tailscale completata."
+          echo "connected=true" >> $GITHUB_OUTPUT
 
       # ============================================================
-      # VERIFICA RAGGIUNGIBILITÀ PC VIA TAILSCALE (dopo connessione)
+      # VERIFICA RAGGIUNGIBILITÀ PC (usa status, non ping)
       # ============================================================
       - name: Check if exit node is reachable
         id: reachability_check
         if: steps.tailscale_connect.outputs.connected == 'true'
         run: |
           echo "=== Verifica raggiungibilità PC via Tailscale ==="
-          if tailscale ping --timeout=2s ${{ secrets.TAILSCALE_EXIT_NODE_IP }}; then
+          if tailscale status | grep -q "${{ secrets.TAILSCALE_EXIT_NODE_IP }}"; then
             echo "✅ PC raggiungibile via Tailscale."
             echo "reachable=true" >> $GITHUB_OUTPUT
           else
@@ -65,7 +72,6 @@ jobs:
             echo "reachable=false" >> $GITHUB_OUTPUT
             exit 1
           fi
-      # ============================================================
 
       # ============================================================
       # VERIFICA STATO WARP (solo se PC raggiungibile)
