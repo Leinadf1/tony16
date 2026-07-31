@@ -21,49 +21,28 @@ jobs:
           python -m pip install --upgrade pip
           pip install pywidevine bs4 pyjwt colorama curl_cffi requests lxml
 
-      # ============================================================
-      # INSTALLA TAILSCALE
-      # ============================================================
       - name: Install Tailscale
         run: |
           curl -fsSL https://tailscale.com/install.sh | sh
           echo "✅ Tailscale installato."
 
       # ============================================================
-      # CONNESSIONE TAILSCALE CON TIMEOUT FORZATO (5 secondi)
+      # PASSO 1: Autentica Tailscale SENZA exit node
       # ============================================================
-      - name: Connect to Tailscale (kill after 5s)
-        id: tailscale_connect
-        continue-on-error: false
+      - name: Authenticate Tailscale
+        id: auth
         run: |
-          echo "=== Connessione a Tailscale (kill after 5s) ==="
-          sudo tailscale up \
-            --authkey=${{ secrets.TAILSCALE_AUTHKEY }} \
-            --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} \
-            --exit-node-allow-lan-access &
-          TAILSCALE_PID=$!
-          sleep 5
-          if kill -0 $TAILSCALE_PID 2>/dev/null; then
-            echo "❌ Connessione Tailscale supera i 5 secondi, termino."
-            sudo kill -9 $TAILSCALE_PID 2>/dev/null || true
-            exit 1
-          fi
-          wait $TAILSCALE_PID
-          if [ $? -ne 0 ]; then
-            echo "❌ Connessione Tailscale fallita."
-            exit 1
-          fi
-          echo "✅ Connessione Tailscale completata."
-          echo "connected=true" >> $GITHUB_OUTPUT
+          echo "=== Autenticazione Tailscale ==="
+          sudo tailscale up --authkey=${{ secrets.TAILSCALE_AUTHKEY }}
+          echo "✅ Tailscale autenticato."
 
       # ============================================================
-      # VERIFICA RAGGIUNGIBILITÀ PC (usa status, non ping)
+      # PASSO 2: Verifica se il PC è raggiungibile (tailscale status)
       # ============================================================
       - name: Check if exit node is reachable
         id: reachability_check
-        if: steps.tailscale_connect.outputs.connected == 'true'
         run: |
-          echo "=== Verifica raggiungibilità PC via Tailscale ==="
+          echo "=== Verifica raggiungibilità PC ==="
           if tailscale status | grep -q "${{ secrets.TAILSCALE_EXIT_NODE_IP }}"; then
             echo "✅ PC raggiungibile via Tailscale."
             echo "reachable=true" >> $GITHUB_OUTPUT
@@ -74,11 +53,35 @@ jobs:
           fi
 
       # ============================================================
-      # VERIFICA STATO WARP (solo se PC raggiungibile)
+      # PASSO 3: Se il PC è raggiungibile, connettiti all'exit node
+      # ============================================================
+      - name: Connect to exit node
+        id: tailscale_connect
+        if: steps.reachability_check.outputs.reachable == 'true'
+        run: |
+          echo "=== Connessione all'exit node ==="
+          sudo tailscale up \
+            --authkey=${{ secrets.TAILSCALE_AUTHKEY }} \
+            --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} \
+            --exit-node-allow-lan-access
+          echo "✅ Connessione all'exit node completata."
+          echo "connected=true" >> $GITHUB_OUTPUT
+
+      # ============================================================
+      # VERIFICA FINALE (opzionale)
+      # ============================================================
+      - name: Verify Tailscale status
+        if: steps.tailscale_connect.outputs.connected == 'true'
+        run: |
+          echo "=== Stato Tailscale ==="
+          tailscale status
+
+      # ============================================================
+      # VERIFICA STATO WARP
       # ============================================================
       - name: Check Warp status
         id: check_warp
-        if: steps.reachability_check.outputs.reachable == 'true'
+        if: steps.tailscale_connect.outputs.connected == 'true'
         run: |
           echo "=== Verifica stato Warp ==="
           WARP_STATUS=$(curl -s --max-time 10 https://www.cloudflare.com/cdn-cgi/trace | grep -i "^warp=" | cut -d'=' -f2 | tr -d '[:space:]')
@@ -94,14 +97,14 @@ jobs:
       # DOWNLOAD DEI FILE DAL GIST
       # ============================================================
       - name: Download accountsdazn.json from Gist
-        if: steps.reachability_check.outputs.reachable == 'true'
+        if: steps.tailscale_connect.outputs.connected == 'true'
         run: |
           curl -s -o accountsdazn.json "${{ secrets.ACCOUNTS_GIST_URL }}"
           sed -i '1s/^\xEF\xBB\xBF//' accountsdazn.json
           sed -i 's/\r$//' accountsdazn.json
 
       - name: Download scripts from Gist
-        if: steps.reachability_check.outputs.reachable == 'true'
+        if: steps.tailscale_connect.outputs.connected == 'true'
         env:
           GIST_ID: ${{ secrets.GIST_ID }}
         run: |
@@ -109,10 +112,10 @@ jobs:
           curl -s "https://gist.githubusercontent.com/raw/${GIST_ID}/dazn_events.py" -o dazn_events.py
 
       # ============================================================
-      # 1. SCRIPT DAZN 1 (sempre eseguito se PC raggiungibile)
+      # 1. SCRIPT DAZN 1
       # ============================================================
       - name: Run DAZN 1 Script
-        if: steps.reachability_check.outputs.reachable == 'true'
+        if: steps.tailscale_connect.outputs.connected == 'true'
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GIST_ID: ${{ secrets.GIST_ID }}
@@ -122,10 +125,10 @@ jobs:
           python -u dazn.py
 
       # ============================================================
-      # 2. SCRIPT EVENTI (solo se Warp attivo E PC raggiungibile)
+      # 2. SCRIPT EVENTI
       # ============================================================
       - name: Run DAZN Events Script
-        if: steps.reachability_check.outputs.reachable == 'true' && steps.check_warp.outputs.warp_active == 'true'
+        if: steps.tailscale_connect.outputs.connected == 'true' && steps.check_warp.outputs.warp_active == 'true'
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GIST_ID: ${{ secrets.GIST_ID }}
