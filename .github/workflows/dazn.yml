@@ -27,27 +27,42 @@ jobs:
           echo "✅ Tailscale installato."
 
       # ============================================================
-      # PASSO 1: Autentica Tailscale (senza exit node)
-      # Questo comando è veloce e non tenta connessioni al PC.
+      # CONNESSIONE TAILSCALE CON TIMEOUT (30 secondi)
       # ============================================================
-      - name: Authenticate Tailscale
-        id: auth
+      - name: Connect to Tailscale (timeout 30s)
+        id: tailscale_connect
         continue-on-error: false
         run: |
-          echo "=== Autenticazione Tailscale ==="
-          sudo tailscale up --authkey=${{ secrets.TAILSCALE_AUTHKEY }}
-          echo "✅ Tailscale autenticato."
+          echo "=== Connessione a Tailscale (timeout 30s) ==="
+          if timeout -k 5s 30s sudo tailscale up \
+            --authkey=${{ secrets.TAILSCALE_AUTHKEY }} \
+            --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} \
+            --exit-node-allow-lan-access; then
+            echo "✅ Connessione Tailscale completata."
+            echo "connected=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Connessione Tailscale fallita (timeout o errore)."
+            echo "connected=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
 
       # ============================================================
-      # PASSO 2: Verifica se il PC è raggiungibile (senza connettersi)
-      # tailscale status è istantaneo e non tenta connessioni di rete.
+      # SE LA CONNESSIONE È FALLITA, IL WORKFLOW SI FERMA QUI
+      # ============================================================
+      - name: Exit if not connected
+        if: steps.tailscale_connect.outputs.connected != 'true'
+        run: |
+          echo "❌ Tailscale non connesso. Termino."
+          exit 1
+
+      # ============================================================
+      # VERIFICA RAGGIUNGIBILITÀ PC (dopo connessione)
       # ============================================================
       - name: Check if exit node is reachable
         id: reachability_check
         run: |
-          echo "=== Verifica raggiungibilità PC ==="
-          # Usa timeout per sicurezza, ma tailscale status è sempre veloce
-          if timeout 5s tailscale status | grep -q "${{ secrets.TAILSCALE_EXIT_NODE_IP }}"; then
+          echo "=== Verifica raggiungibilità PC via Tailscale ==="
+          if tailscale ping --timeout=2s ${{ secrets.TAILSCALE_EXIT_NODE_IP }}; then
             echo "✅ PC raggiungibile via Tailscale."
             echo "reachable=true" >> $GITHUB_OUTPUT
           else
@@ -57,37 +72,11 @@ jobs:
           fi
 
       # ============================================================
-      # PASSO 3: Se il PC è raggiungibile, connettiti con l'exit node
-      # Ora la connessione è veloce perché il peer è già noto.
-      # ============================================================
-      - name: Connect to exit node
-        id: tailscale_connect
-        if: steps.reachability_check.outputs.reachable == 'true'
-        continue-on-error: false
-        run: |
-          echo "=== Connessione all'exit node ==="
-          sudo tailscale up \
-            --authkey=${{ secrets.TAILSCALE_AUTHKEY }} \
-            --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} \
-            --exit-node-allow-lan-access
-          echo "✅ Connessione all'exit node completata."
-          echo "connected=true" >> $GITHUB_OUTPUT
-
-      # ============================================================
-      # VERIFICA FINALE: stato Tailscale
-      # ============================================================
-      - name: Verify Tailscale status
-        if: steps.tailscale_connect.outputs.connected == 'true'
-        run: |
-          echo "=== Stato Tailscale ==="
-          tailscale status
-
-      # ============================================================
       # VERIFICA STATO WARP (solo se PC raggiungibile)
       # ============================================================
       - name: Check Warp status
         id: check_warp
-        if: steps.tailscale_connect.outputs.connected == 'true'
+        if: steps.reachability_check.outputs.reachable == 'true'
         run: |
           echo "=== Verifica stato Warp ==="
           WARP_STATUS=$(curl -s --max-time 10 https://www.cloudflare.com/cdn-cgi/trace | grep -i "^warp=" | cut -d'=' -f2 | tr -d '[:space:]')
@@ -103,14 +92,14 @@ jobs:
       # DOWNLOAD DEI FILE DAL GIST
       # ============================================================
       - name: Download accountsdazn.json from Gist
-        if: steps.tailscale_connect.outputs.connected == 'true'
+        if: steps.reachability_check.outputs.reachable == 'true'
         run: |
           curl -s -o accountsdazn.json "${{ secrets.ACCOUNTS_GIST_URL }}"
           sed -i '1s/^\xEF\xBB\xBF//' accountsdazn.json
           sed -i 's/\r$//' accountsdazn.json
 
       - name: Download scripts from Gist
-        if: steps.tailscale_connect.outputs.connected == 'true'
+        if: steps.reachability_check.outputs.reachable == 'true'
         env:
           GIST_ID: ${{ secrets.GIST_ID }}
         run: |
@@ -121,7 +110,7 @@ jobs:
       # 1. SCRIPT DAZN 1 (sempre eseguito se PC raggiungibile)
       # ============================================================
       - name: Run DAZN 1 Script
-        if: steps.tailscale_connect.outputs.connected == 'true'
+        if: steps.reachability_check.outputs.reachable == 'true'
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GIST_ID: ${{ secrets.GIST_ID }}
@@ -134,7 +123,7 @@ jobs:
       # 2. SCRIPT EVENTI (solo se Warp attivo E PC raggiungibile)
       # ============================================================
       - name: Run DAZN Events Script
-        if: steps.tailscale_connect.outputs.connected == 'true' && steps.check_warp.outputs.warp_active == 'true'
+        if: steps.reachability_check.outputs.reachable == 'true' && steps.check_warp.outputs.warp_active == 'true'
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GIST_ID: ${{ secrets.GIST_ID }}
