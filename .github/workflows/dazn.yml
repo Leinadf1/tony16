@@ -21,30 +21,29 @@ jobs:
           python -m pip install --upgrade pip
           pip install pywidevine bs4 pyjwt colorama curl_cffi requests lxml
 
-      # ============================================================
-      # INSTALLA TAILSCALE
-      # ============================================================
       - name: Install Tailscale
         run: |
           curl -fsSL https://tailscale.com/install.sh | sh
           echo "✅ Tailscale installato."
 
       # ============================================================
-      # CONNESSIONE TAILSCALE CON TIMEOUT FORZATO (5 secondi)
+      # CONNESSIONE TAILSCALE CON TIMEOUT DI 15 SECONDI
+      # Se il PC è spento o la connessione è lenta, il processo viene ucciso
+      # e il workflow termina immediatamente.
       # ============================================================
-      - name: Connect to Tailscale (kill after 5s)
+      - name: Connect to Tailscale (timeout 15s)
         id: tailscale_connect
         continue-on-error: false
         run: |
-          echo "=== Connessione a Tailscale (kill after 5s) ==="
+          echo "=== Connessione a Tailscale (timeout 15s) ==="
           sudo tailscale up \
             --authkey=${{ secrets.TAILSCALE_AUTHKEY }} \
             --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} \
             --exit-node-allow-lan-access &
           TAILSCALE_PID=$!
-          sleep 5
+          sleep 15
           if kill -0 $TAILSCALE_PID 2>/dev/null; then
-            echo "❌ Connessione Tailscale supera i 5 secondi, termino."
+            echo "❌ Connessione Tailscale supera i 15 secondi, termino."
             sudo kill -9 $TAILSCALE_PID 2>/dev/null || true
             exit 1
           fi
