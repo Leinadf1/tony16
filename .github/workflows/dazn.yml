@@ -27,23 +27,21 @@ jobs:
           echo "✅ Tailscale installato."
 
       # ============================================================
-      # CONNESSIONE TAILSCALE CON TIMEOUT DI 15 SECONDI
-      # Se il PC è spento o la connessione è lenta, il processo viene ucciso
-      # e il workflow termina immediatamente.
+      # CONNESSIONE TAILSCALE CON TIMEOUT DI 30 SECONDI
       # ============================================================
-      - name: Connect to Tailscale (timeout 15s)
+      - name: Connect to Tailscale (timeout 30s)
         id: tailscale_connect
         continue-on-error: false
         run: |
-          echo "=== Connessione a Tailscale (timeout 15s) ==="
+          echo "=== Connessione a Tailscale (timeout 30s) ==="
           sudo tailscale up \
             --authkey=${{ secrets.TAILSCALE_AUTHKEY }} \
             --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} \
             --exit-node-allow-lan-access &
           TAILSCALE_PID=$!
-          sleep 15
+          sleep 30
           if kill -0 $TAILSCALE_PID 2>/dev/null; then
-            echo "❌ Connessione Tailscale supera i 15 secondi, termino."
+            echo "❌ Connessione Tailscale supera i 30 secondi, termino."
             sudo kill -9 $TAILSCALE_PID 2>/dev/null || true
             exit 1
           fi
