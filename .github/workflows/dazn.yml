@@ -1,11 +1,12 @@
-name: Test DAZN WARP su GitHub
+name: DAZN M3U Auto Generator
 
 on:
   workflow_dispatch:
 
 jobs:
-  generate:
+  build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -20,7 +21,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install pywidevine bs4 pyjwt colorama curl_cffi requests lxml
 
-      - name: Download accountsdazn.json
+      - name: Download accountsdazn.json from Gist
         run: |
           curl -s -o accountsdazn.json "${{ secrets.ACCOUNTS_GIST_URL }}"
           sed -i '1s/^\xEF\xBB\xBF//' accountsdazn.json
@@ -39,7 +40,7 @@ jobs:
           echo "deb [signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/cloudflare-client.list
           sudo apt-get update
           sudo apt-get install -y cloudflare-warp
-          sudo warp-cli register
+          sudo warp-cli registration new
           sudo warp-cli set-mode warp+doh
           sudo warp-cli connect
           sleep 5
@@ -48,7 +49,7 @@ jobs:
           echo ""
           warp-cli status
 
-      - name: Generate DAZN 1 WARP
+      - name: Run DAZN 1 Script (WARP)
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GIST_ID: ${{ secrets.GIST_ID }}
