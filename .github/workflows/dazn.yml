@@ -41,9 +41,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y cloudflare-warp
           sudo warp-cli registration new
-          sudo warp-cli registration accept-tos
           sudo warp-cli set-mode warp+doh
-          sudo warp-cli connect
+          sudo warp-cli connect --accept-tos
           sleep 5
           echo "IP pubblico dopo Warp:"
           curl -s https://ifconfig.me
