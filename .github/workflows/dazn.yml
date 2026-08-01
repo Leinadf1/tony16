@@ -21,6 +21,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install pywidevine bs4 pyjwt colorama curl_cffi requests lxml PySocks
 
+      # ============================================================
+      # INSTALLA TAILSCALE
+      # ============================================================
       - name: Install Tailscale
         run: |
           curl -fsSL https://tailscale.com/install.sh | sh
@@ -112,7 +115,7 @@ jobs:
           curl -s "https://gist.githubusercontent.com/raw/${GIST_ID}/dazn_events.py" -o dazn_events.py
 
       # ============================================================
-      # 1. SCRIPT DAZN 1
+      # 1. SCRIPT DAZN 1 (sempre eseguito se PC raggiungibile)
       # ============================================================
       - name: Run DAZN 1 Script
         if: steps.tailscale_connect.outputs.connected == 'true'
@@ -125,7 +128,7 @@ jobs:
           python -u dazn.py
 
       # ============================================================
-      # 2. SCRIPT EVENTI
+      # 2. SCRIPT EVENTI (solo se Warp attivo E PC raggiungibile)
       # ============================================================
       - name: Run DAZN Events Script
         if: steps.tailscale_connect.outputs.connected == 'true' && steps.check_warp.outputs.warp_active == 'true'
