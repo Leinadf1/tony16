@@ -21,37 +21,108 @@ jobs:
           python -m pip install --upgrade pip
           pip install pywidevine bs4 pyjwt colorama curl_cffi requests lxml
 
+      # ============================================================
+      # INSTALLA TAILSCALE (PRIMA di qualsiasi controllo)
+      # ============================================================
+      - name: Install Tailscale
+        run: |
+          curl -fsSL https://tailscale.com/install.sh | sh
+          echo "✅ Tailscale installato."
+
+      # ============================================================
+      # TENTATIVO DI CONNESSIONE A TAILSCALE CON TIMEOUT (30s)
+      # ============================================================
+      - name: Connect to Tailscale (timeout 30s)
+        id: tailscale_connect
+        continue-on-error: false
+        run: |
+          echo "=== Connessione a Tailscale (timeout 30s) ==="
+          if timeout 30s sudo tailscale up \
+            --authkey=${{ secrets.TAILSCALE_AUTHKEY }} \
+            --exit-node=${{ secrets.TAILSCALE_EXIT_NODE_IP }} \
+            --exit-node-allow-lan-access; then
+            echo "✅ Connessione Tailscale completata."
+            echo "connected=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Connessione Tailscale fallita (timeout o errore)."
+            echo "connected=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      # ============================================================
+      # VERIFICA RAGGIUNGIBILITÀ PC VIA TAILSCALE (dopo connessione)
+      # ============================================================
+      - name: Check if exit node is reachable
+        id: reachability_check
+        if: steps.tailscale_connect.outputs.connected == 'true'
+        run: |
+          echo "=== Verifica raggiungibilità PC via Tailscale ==="
+          if tailscale ping --timeout=2s ${{ secrets.TAILSCALE_EXIT_NODE_IP }}; then
+            echo "✅ PC raggiungibile via Tailscale."
+            echo "reachable=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ PC non raggiungibile (spento o offline). Termino."
+            echo "reachable=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+      # ============================================================
+
+      # ============================================================
+      # VERIFICA STATO WARP (solo se PC raggiungibile)
+      # ============================================================
+      - name: Check Warp status
+        id: check_warp
+        if: steps.reachability_check.outputs.reachable == 'true'
+        run: |
+          echo "=== Verifica stato Warp ==="
+          WARP_STATUS=$(curl -s --max-time 10 https://www.cloudflare.com/cdn-cgi/trace | grep -i "^warp=" | cut -d'=' -f2 | tr -d '[:space:]')
+          if [ "$WARP_STATUS" == "on" ]; then
+            echo "✅ Warp attivo."
+            echo "warp_active=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Warp non attivo."
+            echo "warp_active=false" >> $GITHUB_OUTPUT
+          fi
+
+      # ============================================================
+      # DOWNLOAD DEI FILE DAL GIST
+      # ============================================================
       - name: Download accountsdazn.json from Gist
+        if: steps.reachability_check.outputs.reachable == 'true'
         run: |
           curl -s -o accountsdazn.json "${{ secrets.ACCOUNTS_GIST_URL }}"
           sed -i '1s/^\xEF\xBB\xBF//' accountsdazn.json
           sed -i 's/\r$//' accountsdazn.json
 
       - name: Download scripts from Gist
+        if: steps.reachability_check.outputs.reachable == 'true'
         env:
           GIST_ID: ${{ secrets.GIST_ID }}
         run: |
           curl -s "https://gist.githubusercontent.com/raw/${GIST_ID}/dazn.py" -o dazn.py
           curl -s "https://gist.githubusercontent.com/raw/${GIST_ID}/dazn_events.py" -o dazn_events.py
 
-      - name: Install and connect Cloudflare WARP
-        run: |
-          curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | sudo gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
-          echo "deb [signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/cloudflare-client.list
-          sudo apt-get update
-          sudo apt-get install -y cloudflare-warp
-          sudo warp-cli registration new
-          sudo warp-cli set-mode warp+doh
-          sudo warp-cli connect --accept-tos
-          sleep 5
-          echo "IP pubblico dopo Warp:"
-          curl -s https://ifconfig.me
-          echo ""
-          warp-cli status
-
-      - name: Run DAZN 1 Script (WARP)
+      # ============================================================
+      # 1. SCRIPT DAZN 1 (sempre eseguito se PC raggiungibile)
+      # ============================================================
+      - name: Run DAZN 1 Script
+        if: steps.reachability_check.outputs.reachable == 'true'
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GIST_ID: ${{ secrets.GIST_ID }}
-          DUPLICATE_DAZN1_AS_WARP: "true"
-        run: python -u dazn.py
+          DUPLICATE_DAZN1_AS_WARP: ${{ steps.check_warp.outputs.warp_active }}
+        run: |
+          echo "=== Esecuzione DAZN 1 ==="
+          python -u dazn.py
+
+      # ============================================================
+      # 2. SCRIPT EVENTI (solo se Warp attivo E PC raggiungibile)
+      # ============================================================
+      - name: Run DAZN Events Script
+        if: steps.reachability_check.outputs.reachable == 'true' && steps.check_warp.outputs.warp_active == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GIST_ID: ${{ secrets.GIST_ID }}
+        run: |
+          echo "=== Esecuzione DAZN Events (Warp attivo) ==="
+          python -u dazn_events.py
