@@ -1,4 +1,12 @@
 #EXTM3U
+#EXTINF:-1 tvg-id="2v6ik8ktoiyfway1ii10bghq8" tvg-name="Borussia Dortmund - Roma" tvg-logo="https://image.discovery.indazn.com/eu/v3/eu/none/2v6ik8ktoiyfway1ii10bghq8_image-header_pIt_1784026862000/fill/none/top/none/85/334/187/webp/image" group-title="DAZN Eventi",Borussia Dortmund - Roma
+#KODIPROP:inputstream.adaptive.manifest_type=mpd
+#KODIPROP:inputstream.adaptive.license_type=org.w3.clearkey
+#KODIPROP:inputstream.adaptive.license_key=8775dcbbbd64510d846c706a5663a94b:5fc053ea1be0445579aa445d0ad4588e
+#KODIPROP:inputstream.adaptive.stream_headers=dazn-token=tend%3A1786895766~geo%3AIT~asn%3A210278~path%3A1_1_8bdc66bb6e10b054fff81c26ca3c603c08c29a55e49fb217aeb4306b0091aa93~id%3A60481d40531d~tk3%3Adffcc50bc31d711d31c2707790de1f5ff20455f7d9002e01f9ac466bba058861
+#EXTVLCOPT:http-user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36 Edg/151.0.0.0
+https://dca-deit-livedazn.daznedge.net/1eq6tb8gdtkq319ksvdmqnflob/tv/stream.mpd?channel=3952&outlet=dazn-italy&plang=en
+
 
 #EXTINF:-1 group-title="PORTOGALLO" tvg-logo="https://3038.images-vfp2.ott.kaltura.com/Service.svc/GetImage/p/3038/entry_id/e3a7169255414c35b01973e333e762e5/version/0",Sport TV 1
 #KODIPROP:inputstream.adaptive.manifest_type=mpd
