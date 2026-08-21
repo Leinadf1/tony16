@@ -1,21 +1,5 @@
 #EXTM3U
 
-#EXTINF:-1 tvg-id="b3uknzzgk2q3n5csrtb7xdqz2" tvg-name="Vicenza - Catanzaro" tvg-logo="https://image.discovery.indazn.com/eu/v3/eu/none/b3uknzzgk2q3n5csrtb7xdqz2_image-header_pIt_1784921953000/fill/none/top/none/85/334/187/webp/image" group-title="DAZN Eventi",Vicenza - Catanzaro
-#KODIPROP:inputstream.adaptive.manifest_type=mpd
-#KODIPROP:inputstream.adaptive.license_type=org.w3.clearkey
-#KODIPROP:inputstream.adaptive.license_key=dee6ae732f0d5febbcc830cb9ffe7dae:6a2668faf83d33fb97f2a0e1e3315855
-#KODIPROP:inputstream.adaptive.stream_headers=dazn-token=st%3D1787345049~exp%3D1787431449~acl%3D/%2A~id%3D60481d40531d~data%3Dcountry%3Dit%23asn%3D210278%23path%3D1s%2C1d%23hashp%3D86a668dc820de2bce6d9eac81fb0a0764e3e6089af2a5525518acc9343fa70f6%23hashua%3D8792e0aa5199c3c96d7a6827b7e92d1a4205a8650150f4c6b497a2baa42380e1%23wm%3D0~hmac%3D61451d3bb94355ce175d3e69ec03492c729c66ea1181a76f74397917edbed6c7
-#EXTVLCOPT:http-user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36 Edg/151.0.0.0
-https://dcb-rw-livedazn.cdn.netrw.it/1j84le40mxayz12bhqpir93j28/web/stream.mpd?channel=3956&outlet=dazn-italy&plang=en
-
-#EXTINF:-1 tvg-id="cvhlyjtydng0i3xch64c1mo1v" tvg-name="Real Betis - Real Sociedad" tvg-logo="https://image.discovery.indazn.com/eu/v3/eu/none/cvhlyjtydng0i3xch64c1mo1v_image-header_pIt_1784628402000/fill/none/top/none/85/334/187/webp/image" group-title="DAZN Eventi",Real Betis - Real Sociedad
-#KODIPROP:inputstream.adaptive.manifest_type=mpd
-#KODIPROP:inputstream.adaptive.license_type=org.w3.clearkey
-#KODIPROP:inputstream.adaptive.license_key=27a3503d16965e429af411f7f810b928:66ac5683c1e47fd9fcf01b698142be9c
-#EXTVLCOPT:http-user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36 Edg/151.0.0.0
-https://dcb-deit-livedazn.daznedge.net/@tend%3A1787432196~proto%3Adash~geo%3AIT~asn%3A13335~path%3A1_1_4c56fe96f0739982123e1621730f6c7e3786b6a7aa816360a8f3dd29d7ba4687~ua%3A98289dd1c8427f7ac9bc8f4d0003f2e0~id%3A60481d40531d~tk3%3A18b99d57f650071264ed95c92e6247f4be7e4d84742fbca6c504215bf2609bbe/jg634y0tp6xa1teb93y6u9nmt/web/stream.mpd?channel=3943&outlet=dazn-italy&plang=en
-
-
 #EXTINF:-1 group-title="PORTOGALLO" tvg-logo="https://3038.images-vfp2.ott.kaltura.com/Service.svc/GetImage/p/3038/entry_id/e3a7169255414c35b01973e333e762e5/version/0",Sport TV 1
 #KODIPROP:inputstream.adaptive.manifest_type=mpd
 #KODIPROP:inputstream.adaptive.license_type=clearkey
