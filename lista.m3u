@@ -12,7 +12,7 @@ https://dcb-rw-livedazn.cdn.netrw.it/1j84le40mxayz12bhqpir93j28/web/stream.mpd?c
 #KODIPROP:inputstream.adaptive.manifest_type=mpd
 #KODIPROP:inputstream.adaptive.license_type=org.w3.clearkey
 #KODIPROP:inputstream.adaptive.license_key=27a3503d16965e429af411f7f810b928:66ac5683c1e47fd9fcf01b698142be9c
-#KODIPROP:inputstream.adaptive.stream_headers=dazn-token=tend%3A1787431450~proto%3Adash~geo%3AIT~asn%3A210278~path%3A1_1_4c56fe96f0739982123e1621730f6c7e3786b6a7aa816360a8f3dd29d7ba4687~ua%3A98289dd1c8427f7ac9bc8f4d0003f2e0~id%3A60481d40531d~tk3%3A3b11801802c79148c9f4761244c9caf254eb631c299fe4b03bd3f43f09322020
+#KODIPROP:inputstream.adaptive.stream_headers=dazn-token=tend%3A1787431616~proto%3Adash~geo%3AIT~asn%3A13335~path%3A1_1_4c56fe96f0739982123e1621730f6c7e3786b6a7aa816360a8f3dd29d7ba4687~ua%3A98289dd1c8427f7ac9bc8f4d0003f2e0~id%3A60481d40531d~tk3%3A4edea31dd08cbdfcefafff3ad0295fc36a92e91829924e7898adddaaf9030530
 #EXTVLCOPT:http-user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36 Edg/151.0.0.0
 https://dca-deit-livedazn.daznedge.net/jg634y0tp6xa1teb93y6u9nmt/web/stream.mpd?channel=3943&outlet=dazn-italy&plang=en
 
