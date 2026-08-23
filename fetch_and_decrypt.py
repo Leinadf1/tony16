@@ -20,11 +20,10 @@ ANDROID_JAR = os.path.join(ANDROID_HOME, "platforms", f"android-{API_LEVEL}", "a
 DECRYPTOR_JAVA = "Decryptor.java"
 DECRYPTOR_JAR = "Decryptor.jar"
 
-FRIDA_VERSION = "17.17.0"
-FRIDA_ARCH = "x86_64"
-FRIDA_SERVER_FILENAME = f"frida-server-{FRIDA_VERSION}-android-{FRIDA_ARCH}.xz"
-FRIDA_SERVER_XZ_PATH = os.path.join(os.getcwd(), FRIDA_SERVER_FILENAME)
-FRIDA_SERVER_BIN_PATH = os.path.join(os.getcwd(), "frida-server")
+# URL diretto del frida-server.xz nella repo originale
+FRIDA_DOWNLOAD_URL = "https://raw.githubusercontent.com/mdjamsad9/dudetvapi/main/frida-server.xz"
+FRIDA_SERVER_BIN = "frida-server"
+FRIDA_SERVER_XZ = "frida-server.xz"
 
 # Endpoints da processare
 ENDPOINTS = ["cats", "sports", "eventcats", "events", "highlights"]
@@ -33,23 +32,22 @@ ENDPOINTS = ["cats", "sports", "eventcats", "events", "highlights"]
 
 def ensure_frida_server():
     """Scarica ed estrae frida-server se non è già presente."""
-    if os.path.exists(FRIDA_SERVER_BIN_PATH):
+    if os.path.exists(FRIDA_SERVER_BIN):
         print("frida-server già presente.")
         return
 
-    if not os.path.exists(FRIDA_SERVER_XZ_PATH):
-        url = f"https://github.com/frida/frida/releases/download/{FRIDA_VERSION}/{FRIDA_SERVER_FILENAME}"
-        print(f"Scaricamento di {url} ...")
-        urllib.request.urlretrieve(url, FRIDA_SERVER_XZ_PATH)
+    if not os.path.exists(FRIDA_SERVER_XZ):
+        print(f"Scaricamento di {FRIDA_DOWNLOAD_URL} ...")
+        urllib.request.urlretrieve(FRIDA_DOWNLOAD_URL, FRIDA_SERVER_XZ)
         print("Download completato.")
     else:
         print("Archivio frida-server.xz già presente.")
 
-    print("Estrazione di frida-server...")
-    with lzma.open(FRIDA_SERVER_XZ_PATH, 'rb') as f_in:
-        with open(FRIDA_SERVER_BIN_PATH, 'wb') as f_out:
+    print("Decompressione di frida-server...")
+    with lzma.open(FRIDA_SERVER_XZ, 'rb') as f_in:
+        with open(FRIDA_SERVER_BIN, 'wb') as f_out:
             shutil.copyfileobj(f_in, f_out)
-    os.chmod(FRIDA_SERVER_BIN_PATH, 0o755)
+    os.chmod(FRIDA_SERVER_BIN, 0o755)
     print("frida-server pronto.")
 
 def ensure_decryptor_jar():
@@ -83,9 +81,8 @@ def ensure_decryptor_jar():
 def start_frida_server():
     """Avvia frida-server sull'emulatore."""
     print("Avvio di frida-server sull'emulatore...")
-    subprocess.run(["adb", "push", FRIDA_SERVER_BIN_PATH, "/data/local/tmp/frida-server"], check=True)
+    subprocess.run(["adb", "push", FRIDA_SERVER_BIN, "/data/local/tmp/frida-server"], check=True)
     subprocess.run(["adb", "shell", "chmod", "755", "/data/local/tmp/frida-server"], check=True)
-    # Avvia in background
     subprocess.Popen(["adb", "shell", "/data/local/tmp/frida-server", "&"])
     time.sleep(3)
     print("frida-server avviato.")
@@ -94,15 +91,13 @@ def launch_sportzx():
     """Lancia l'app SportzX per attivare il Remote Config."""
     print("Lancio SportzX sull'emulatore...")
     subprocess.run(["adb", "shell", "monkey", "-p", "com.sportzx.live", "1"], check=True)
-    time.sleep(8)  # attesa per il fetch del remote config
+    time.sleep(8)
 
 def get_active_api_domain():
-    """Legge il dominio API attivo dal logcat o da un file remoto."""
-    # Metodo semplice: cerca nel logcat una riga contenente 'base_url' o simili
+    """Legge il dominio API attivo dal logcat o usa il fallback."""
     print("Individuazione del dominio API attivo...")
     try:
         logcat = subprocess.check_output(["adb", "logcat", "-d", "-s", "SportzX", "RemoteConfig"], text=True)
-        # Cerca l'URL nel log
         import re
         match = re.search(r'https?://[^\s"]+', logcat)
         if match:
@@ -112,7 +107,6 @@ def get_active_api_domain():
     except Exception as e:
         print(f"Lettura logcat fallita: {e}")
 
-    # Fallback: dominio predefinito
     fallback_domain = "https://app.modijitop.top"
     print(f"[Auto Domain] Uso dominio predefinito: {fallback_domain}")
     return fallback_domain
@@ -120,13 +114,11 @@ def get_active_api_domain():
 def decrypt_with_jar(payload: str) -> str:
     """Tenta la decifratura usando Decryptor.jar tramite app_process."""
     print("Tentativo decifratura con Decryptor.jar...")
-    # Scrivi il payload su un file temporaneo sull'host
     temp_file = "temp_encrypted.txt"
     with open(temp_file, "w") as f:
         f.write(payload)
-    # Copia sul dispositivo
+
     subprocess.run(["adb", "push", temp_file, "/data/local/tmp/temp_encrypted.txt"], check=True)
-    # Esegui Decryptor
     cmd = [
         "adb", "shell",
         "app_process",
@@ -140,19 +132,21 @@ def decrypt_with_jar(payload: str) -> str:
     if result.returncode != 0:
         print(f"Decryptor fallito: {result.stderr}")
         return None
-    # Leggi il risultato
+
     subprocess.run(["adb", "pull", "/data/local/tmp/temp_decrypted.txt", "temp_decrypted.txt"], check=True)
     with open("temp_decrypted.txt", "r") as f:
         decrypted = f.read()
+
     os.remove(temp_file)
     os.remove("temp_decrypted.txt")
     return decrypted
 
 def decrypt_with_frida(payload: str) -> str:
-    """Usa Frida per decifrare il payload agganciando l'app SportzX."""
+    """
+    Usa Frida per decifrare il payload agganciando l'app SportzX.
+    Questo è un placeholder: va adattato alla classe reale dell'app.
+    """
     print("Tentativo decifratura con Frida...")
-    # Assicurati che frida-server sia in esecuzione
-    # Esegui uno script Frida inline che intercetta la funzione di decifratura
     frida_script = """
 import frida
 import sys
@@ -165,9 +159,8 @@ def on_message(message, data):
 
 device = frida.get_usb_device(timeout=10)
 session = device.attach("com.sportzx.live")
-script = session.create_script("""
+script = session.create_script(\"\"\"
 Java.perform(function () {
-    // Cerca la classe di decifratura (da adattare al nome reale)
     var Decryptor = Java.use('com.sportzx.live.utils.Decryptor');
     Decryptor.decrypt.overload('java.lang.String').implementation = function (encrypted) {
         var result = this.decrypt(encrypted);
@@ -175,34 +168,24 @@ Java.perform(function () {
         return result;
     };
 });
-""")
+\"\"\")
 script.on('message', on_message)
 script.load()
 sys.stdin.read()
 """
-    # Salva lo script Frida in un file temporaneo
     frida_script_file = "frida_hook.py"
     with open(frida_script_file, "w") as f:
         f.write(frida_script)
 
-    # Esegui lo script Frida in background
     proc = subprocess.Popen(["python", frida_script_file], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-
-    # Invia il payload all'app tramite broadcast o altro metodo? Qui simuliamo: non è necessario,
-    # lo script Frida aggancerà la decifratura quando l'app la chiama.
-    # Per questo esempio, assumiamo che il payload venga decifrato internamente e che lo script invii il risultato.
-    # Dovresti implementare la logica reale di comunicazione.
     time.sleep(10)
     proc.terminate()
 
-    # Leggi l'output di Frida e cerca il valore decifrato
     stdout, _ = proc.communicate()
-    # Estrai il JSON decifrato (supponendo che Frida l'abbia inviato)
     decrypted = None
+    import re
     for line in stdout.splitlines():
         if "decrypted" in line:
-            # Estrai il valore decifrato (semplificato)
-            import re
             match = re.search(r'"decrypted": "(.*)"', line)
             if match:
                 decrypted = match.group(1)
@@ -233,7 +216,6 @@ def process_endpoint(name: str, base_url: str):
             print(f"  [FAILED] Decifratura {name} fallita.")
             return None
 
-    # Salva il JSON decifrato
     output_file = os.path.join("public_decrypted", f"{name}.json")
     with open(output_file, "w") as f:
         f.write(decrypted)
