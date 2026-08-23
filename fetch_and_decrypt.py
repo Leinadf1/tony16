@@ -30,7 +30,8 @@ FRIDA_SERVER_XZ = "frida-server.xz"
 # Endpoints principali da decifrare
 ENDPOINTS = ["cats", "sports", "eventcats", "events", "highlights"]
 
-# Template URL per i payload dei singoli canali (DA ADATTARE se necessario)
+# Template URL per i payload dei singoli canali
+# ⚠️ ADATTA questo in base all'endpoint reale usato dall'app
 CHANNEL_PAYLOAD_URL_TEMPLATE = "{base_url}/channel/{channel_id}.json"
 
 # Cartelle di output
@@ -233,27 +234,30 @@ def decrypt_payload(payload: str) -> str:
 
 def extract_channel_ids(json_data):
     """
-    Estrae gli ID dei canali/highlight dal JSON decifrato.
-    Da adattare alla struttura reale dei dati.
+    Estrae ricorsivamente tutti gli ID numerici di 5 cifre (o qualsiasi campo
+    che contenga 'id' nel nome) da un JSON decifrato.
+    Restituisce un set di stringhe.
     """
     ids = set()
-    # Esempio: cerca chiavi "id" in liste annidate
-    if isinstance(json_data, dict):
-        for key, value in json_data.items():
-            if key in ("channels", "data", "list", "items", "categories"):
-                if isinstance(value, list):
-                    for item in value:
-                        if isinstance(item, dict) and "id" in item:
-                            ids.add(str(item["id"]))
-                elif isinstance(value, dict):
-                    ids.update(extract_channel_ids(value))
-            elif isinstance(value, (dict, list)):
-                ids.update(extract_channel_ids(value))
-    elif isinstance(json_data, list):
-        for item in json_data:
-            if isinstance(item, dict):
-                ids.update(extract_channel_ids(item))
-    return ids
+
+    def _extract(obj):
+        if isinstance(obj, dict):
+            for key, value in obj.items():
+                # Se la chiave contiene 'id' (case-insensitive) e il valore è un numero o stringa numerica
+                if 'id' in key.lower():
+                    if isinstance(value, (int, float)) and not isinstance(value, bool):
+                        ids.add(str(int(value)))
+                    elif isinstance(value, str) and value.isdigit():
+                        ids.add(value)
+                # Ricorsione su valori annidati
+                _extract(value)
+        elif isinstance(obj, list):
+            for item in obj:
+                _extract(item)
+
+    _extract(json_data)
+    # Filtra solo ID di 5 cifre (come 50002) – rimuovi questo filtro se non serve
+    return {i for i in ids if len(i) == 5 and i.isdigit()}
 
 def fetch_channel_payload(channel_id: str, base_url: str) -> str:
     """Scarica il payload cifrato del canale."""
@@ -277,13 +281,12 @@ def process_channel(channel_id: str, base_url: str):
         return False
 
     payload_hash = hashlib.sha256(payload.encode()).hexdigest()
-    # Controlla cache
-    if channel_id in PAYLOAD_CACHE and PAYLOAD_CACHE[channel_id] == payload_hash:
-        print(f"  {channel_id}: invariato, uso cache.")
-        # Verifica che il file esista
-        channel_file = CHANNELS_DIR / f"{channel_id}.json"
-        if channel_file.exists():
-            return True
+    # ⚠️ NOTA: forziamo l'aggiornamento per questo run, quindi commentiamo il salto cache
+    # if channel_id in PAYLOAD_CACHE and PAYLOAD_CACHE[channel_id] == payload_hash:
+    #     print(f"  {channel_id}: invariato, uso cache.")
+    #     channel_file = CHANNELS_DIR / f"{channel_id}.json"
+    #     if channel_file.exists():
+    #         return True
 
     print(f"  Decifratura payload per {channel_id}...")
     decrypted = decrypt_payload(payload)
@@ -321,11 +324,22 @@ def harvest_channels(base_url: str):
             print(f"  Errore lettura {json_file}: {e}")
 
     print(f"  Totale ID unici: {len(all_ids)}")
-    if not all_ids:
-        print("  Nessun ID trovato, impossibile proseguire.")
+    if all_ids:
+        print("  ID trovati (primi 20):", sorted(all_ids)[:20])
+    else:
+        print("  Nessun ID trovato. Verifica la struttura dei JSON decifrati.")
+        # Stampa la struttura del primo file disponibile per debug
+        for endpoint in ENDPOINTS:
+            json_file = PUBLIC_DECRYPTED_DIR / f"{endpoint}.json"
+            if json_file.exists():
+                with open(json_file, "r") as f:
+                    data = json.load(f)
+                print(f"  Struttura di {endpoint}.json (prime chiavi):",
+                      list(data.keys()) if isinstance(data, dict) else type(data))
+                break
         return
 
-    # Fase 1: download in parallelo (semplice sequenziale per ora)
+    # Fase 1: download e decifratura (sequenziale per semplicità)
     print("  [Phase 1] Fetching payloads...")
     success = 0
     errors = 0
