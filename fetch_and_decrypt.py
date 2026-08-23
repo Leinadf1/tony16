@@ -2,16 +2,18 @@ import os
 import sys
 import time
 import json
+import hashlib
 import lzma
 import shutil
 import subprocess
 import urllib.request
 import requests
+from pathlib import Path
 
 # ---------- Configurazione ----------
 ANDROID_HOME = os.environ.get("ANDROID_HOME") or os.environ.get("ANDROID_SDK_ROOT")
 if not ANDROID_HOME:
-    print("Errore: ANDROID_HOME non è impostato.")
+    print("Errore: ANDROID_HOME non impostato.")
     sys.exit(1)
 
 API_LEVEL = "33"
@@ -25,10 +27,35 @@ FRIDA_DOWNLOAD_URL = "https://raw.githubusercontent.com/mdjamsad9/dudetvapi/main
 FRIDA_SERVER_BIN = "frida-server"
 FRIDA_SERVER_XZ = "frida-server.xz"
 
-# Endpoints da processare
+# Endpoints principali da decifrare
 ENDPOINTS = ["cats", "sports", "eventcats", "events", "highlights"]
 
-# ---------- Funzioni ----------
+# Template URL per i payload dei singoli canali (DA ADATTARE se necessario)
+CHANNEL_PAYLOAD_URL_TEMPLATE = "{base_url}/channel/{channel_id}.json"
+
+# Cartelle di output
+PUBLIC_DECRYPTED_DIR = Path("public_decrypted")
+CHANNELS_DIR = PUBLIC_DECRYPTED_DIR / "channels"
+CHANNELS_DIR.mkdir(parents=True, exist_ok=True)
+
+# File di cache
+CACHE_FILE = PUBLIC_DECRYPTED_DIR / ".payload_cache.json"
+if CACHE_FILE.exists():
+    with open(CACHE_FILE, "r") as f:
+        PAYLOAD_CACHE = json.load(f)
+else:
+    PAYLOAD_CACHE = {}
+
+# ---------- Funzioni base ----------
+
+def run_adb(args, check=True, timeout=None):
+    cmd = ["adb"] + args
+    print(f"ADB: {' '.join(cmd)}")
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+    if check and result.returncode != 0:
+        print(f"Errore ADB: {result.stderr}")
+        sys.exit(1)
+    return result
 
 def ensure_frida_server():
     """Scarica ed estrae frida-server se non è già presente."""
@@ -81,8 +108,8 @@ def ensure_decryptor_jar():
 def start_frida_server():
     """Avvia frida-server sull'emulatore."""
     print("Avvio di frida-server sull'emulatore...")
-    subprocess.run(["adb", "push", FRIDA_SERVER_BIN, "/data/local/tmp/frida-server"], check=True)
-    subprocess.run(["adb", "shell", "chmod", "755", "/data/local/tmp/frida-server"], check=True)
+    run_adb(["push", FRIDA_SERVER_BIN, "/data/local/tmp/frida-server"])
+    run_adb(["shell", "chmod", "755", "/data/local/tmp/frida-server"])
     subprocess.Popen(["adb", "shell", "/data/local/tmp/frida-server", "&"])
     time.sleep(3)
     print("frida-server avviato.")
@@ -90,7 +117,7 @@ def start_frida_server():
 def launch_sportzx():
     """Lancia l'app SportzX per attivare il Remote Config."""
     print("Lancio SportzX sull'emulatore...")
-    subprocess.run(["adb", "shell", "monkey", "-p", "com.sportzx.live", "1"], check=True)
+    run_adb(["shell", "monkey", "-p", "com.sportzx.live", "1"])
     time.sleep(8)
 
 def get_active_api_domain():
@@ -111,6 +138,8 @@ def get_active_api_domain():
     print(f"[Auto Domain] Uso dominio predefinito: {fallback_domain}")
     return fallback_domain
 
+# ---------- Decifratura ----------
+
 def decrypt_with_jar(payload: str) -> str:
     """Tenta la decifratura usando Decryptor.jar tramite app_process."""
     print("Tentativo decifratura con Decryptor.jar...")
@@ -118,7 +147,7 @@ def decrypt_with_jar(payload: str) -> str:
     with open(temp_file, "w") as f:
         f.write(payload)
 
-    subprocess.run(["adb", "push", temp_file, "/data/local/tmp/temp_encrypted.txt"], check=True)
+    run_adb(["push", temp_file, "/data/local/tmp/temp_encrypted.txt"])
     cmd = [
         "adb", "shell",
         "app_process",
@@ -133,7 +162,7 @@ def decrypt_with_jar(payload: str) -> str:
         print(f"Decryptor fallito: {result.stderr}")
         return None
 
-    subprocess.run(["adb", "pull", "/data/local/tmp/temp_decrypted.txt", "temp_decrypted.txt"], check=True)
+    run_adb(["pull", "/data/local/tmp/temp_decrypted.txt", "temp_decrypted.txt"])
     with open("temp_decrypted.txt", "r") as f:
         decrypted = f.read()
 
@@ -193,49 +222,130 @@ sys.stdin.read()
     os.remove(frida_script_file)
     return decrypted
 
-def process_endpoint(name: str, base_url: str):
-    """Scarica l'endpoint cifrato e tenta la decifratura."""
-    url = f"{base_url}/{name}.json"
-    print(f"Processo endpoint '{name}' ({url})...")
-    try:
-        resp = requests.get(url, timeout=15)
-        if resp.status_code != 200:
-            print(f"  Errore HTTP {resp.status_code}")
-            return None
-        payload = resp.text
-    except Exception as e:
-        print(f"  Errore durante il download: {e}")
-        return None
-
-    print(f"  Decifratura di {name}...")
+def decrypt_payload(payload: str) -> str:
+    """Prova prima con JAR, poi con Frida."""
     decrypted = decrypt_with_jar(payload)
     if decrypted is None:
-        print("  Decifratura JNI fallita, uso Frida...")
         decrypted = decrypt_with_frida(payload)
-        if decrypted is None:
-            print(f"  [FAILED] Decifratura {name} fallita.")
-            return None
-
-    output_file = os.path.join("public_decrypted", f"{name}.json")
-    with open(output_file, "w") as f:
-        f.write(decrypted)
-    print(f"  Salvato {output_file}")
     return decrypted
 
-def save_config(base_url: str):
-    """Crea o aggiorna config.json."""
-    config = {
-        "last_update": time.time(),
-        "active_api_base": base_url,
-        "source": "dudetv_3.2v.apk"
-    }
-    with open("config.json", "w") as f:
-        json.dump(config, f, indent=2)
-    print("config.json aggiornato.")
+# ---------- Harvesting ----------
+
+def extract_channel_ids(json_data):
+    """
+    Estrae gli ID dei canali/highlight dal JSON decifrato.
+    Da adattare alla struttura reale dei dati.
+    """
+    ids = set()
+    # Esempio: cerca chiavi "id" in liste annidate
+    if isinstance(json_data, dict):
+        for key, value in json_data.items():
+            if key in ("channels", "data", "list", "items", "categories"):
+                if isinstance(value, list):
+                    for item in value:
+                        if isinstance(item, dict) and "id" in item:
+                            ids.add(str(item["id"]))
+                elif isinstance(value, dict):
+                    ids.update(extract_channel_ids(value))
+            elif isinstance(value, (dict, list)):
+                ids.update(extract_channel_ids(value))
+    elif isinstance(json_data, list):
+        for item in json_data:
+            if isinstance(item, dict):
+                ids.update(extract_channel_ids(item))
+    return ids
+
+def fetch_channel_payload(channel_id: str, base_url: str) -> str:
+    """Scarica il payload cifrato del canale."""
+    url = CHANNEL_PAYLOAD_URL_TEMPLATE.format(base_url=base_url, channel_id=channel_id)
+    print(f"  Scaricamento payload per {channel_id}: {url}")
+    try:
+        resp = requests.get(url, timeout=15)
+        if resp.status_code == 200:
+            return resp.text
+        else:
+            print(f"  Errore HTTP {resp.status_code}")
+            return None
+    except Exception as e:
+        print(f"  Errore download: {e}")
+        return None
+
+def process_channel(channel_id: str, base_url: str):
+    """Scarica e decifra un singolo canale, aggiornando la cache."""
+    payload = fetch_channel_payload(channel_id, base_url)
+    if payload is None:
+        return False
+
+    payload_hash = hashlib.sha256(payload.encode()).hexdigest()
+    # Controlla cache
+    if channel_id in PAYLOAD_CACHE and PAYLOAD_CACHE[channel_id] == payload_hash:
+        print(f"  {channel_id}: invariato, uso cache.")
+        # Verifica che il file esista
+        channel_file = CHANNELS_DIR / f"{channel_id}.json"
+        if channel_file.exists():
+            return True
+
+    print(f"  Decifratura payload per {channel_id}...")
+    decrypted = decrypt_payload(payload)
+    if decrypted is None:
+        print(f"  [FAILED] Decifratura canale {channel_id} fallita.")
+        return False
+
+    # Salva il JSON decifrato
+    channel_file = CHANNELS_DIR / f"{channel_id}.json"
+    with open(channel_file, "w") as f:
+        f.write(decrypted)
+
+    # Aggiorna cache
+    PAYLOAD_CACHE[channel_id] = payload_hash
+    print(f"  Salvato {channel_file}")
+    return True
+
+def harvest_channels(base_url: str):
+    """Esegue l'harvesting degli ID canale dai JSON decifrati principali."""
+    print("\n=== Harvesting TV Channel Streams from Subcategories ===")
+    all_ids = set()
+
+    for endpoint in ENDPOINTS:
+        json_file = PUBLIC_DECRYPTED_DIR / f"{endpoint}.json"
+        if not json_file.exists():
+            print(f"  {json_file} non trovato, salto.")
+            continue
+        try:
+            with open(json_file, "r") as f:
+                data = json.load(f)
+            ids = extract_channel_ids(data)
+            print(f"  {endpoint}: trovati {len(ids)} ID")
+            all_ids.update(ids)
+        except Exception as e:
+            print(f"  Errore lettura {json_file}: {e}")
+
+    print(f"  Totale ID unici: {len(all_ids)}")
+    if not all_ids:
+        print("  Nessun ID trovato, impossibile proseguire.")
+        return
+
+    # Fase 1: download in parallelo (semplice sequenziale per ora)
+    print("  [Phase 1] Fetching payloads...")
+    success = 0
+    errors = 0
+    for channel_id in sorted(all_ids):
+        if process_channel(channel_id, base_url):
+            success += 1
+        else:
+            errors += 1
+
+    print(f"  [Done] Decrypted: {success} | Errors: {errors}")
+
+    # Salva la cache aggiornata
+    with open(CACHE_FILE, "w") as f:
+        json.dump(PAYLOAD_CACHE, f, indent=2)
+
+# ---------- Main ----------
 
 def main():
     print("Attendo che l'emulatore sia pronto...")
-    subprocess.run(["adb", "wait-for-device"], check=True)
+    run_adb(["wait-for-device"])
     time.sleep(5)
 
     ensure_decryptor_jar()
@@ -244,18 +354,46 @@ def main():
     launch_sportzx()
 
     base_url = get_active_api_domain()
-    save_config(base_url)
+    print(f"Dominio API attivo: {base_url}")
 
-    os.makedirs("public_decrypted", exist_ok=True)
+    # Salva config.json
+    config = {
+        "last_update": time.time(),
+        "active_api_base": base_url,
+        "source": "dudetv_3.2v.apk"
+    }
+    with open("config.json", "w") as f:
+        json.dump(config, f, indent=2)
 
-    total_success = 0
+    # Processa gli endpoint principali
     for endpoint in ENDPOINTS:
-        result = process_endpoint(endpoint, base_url)
-        if result is not None:
-            total_success += 1
+        url = f"{base_url}/{endpoint}.json"
+        print(f"\nProcesso endpoint '{endpoint}' ({url})...")
+        try:
+            resp = requests.get(url, timeout=15)
+            if resp.status_code != 200:
+                print(f"  Errore HTTP {resp.status_code}")
+                continue
+            payload = resp.text
+        except Exception as e:
+            print(f"  Errore download: {e}")
+            continue
 
-    print(f"\nDecifrati con successo: {total_success}/{len(ENDPOINTS)}")
-    print("Processing completo!")
+        print(f"  Decifratura di {endpoint}...")
+        decrypted = decrypt_payload(payload)
+        if decrypted is None:
+            print(f"  [FAILED] Decifratura {endpoint} fallita.")
+            continue
+
+        output_file = PUBLIC_DECRYPTED_DIR / f"{endpoint}.json"
+        with open(output_file, "w") as f:
+            f.write(decrypted)
+        print(f"  Salvato {output_file}")
+
+    # Esegue l'harvesting dei canali
+    harvest_channels(base_url)
+
+    print("\nProcessing completo!")
 
 if __name__ == "__main__":
     main()
