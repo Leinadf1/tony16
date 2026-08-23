@@ -1,0 +1,65 @@
+name: Run Feed Processor
+
+on:
+  schedule:
+    - cron: '0 * * * *'   # Runs every 1 hour
+  workflow_dispatch:      # Allows manual trigger
+
+jobs:
+  run-processor:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Set up Java
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+        cache: 'pip'
+
+    - name: Install Dependencies
+      run: |
+        pip install -r requirements.txt
+
+    - name: Enable KVM group perms
+      run: |
+        echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+        sudo udevadm control --reload-rules
+        sudo udevadm trigger --name-match=kvm
+
+    - name: Run Emulator and Decrypt
+      uses: reactivecircus/android-emulator-runner@v2
+      with:
+        api-level: 33
+        target: google_apis
+        arch: x86_64
+        ram-size: 2048M
+        disable-animations: true
+        emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+        script: |
+          # Unlock emulator screen
+          adb shell wm dismiss-keyguard
+          
+          # 1. Install official SportzX v3.2 APK (renamed to dudetv_3.2v.apk) granting all permissions
+          adb install -g dudetv_3.2v.apk
+          
+          # Explicitly grant POST_NOTIFICATIONS for Android 13+ safety
+          adb shell pm grant com.sportzx.live android.permission.POST_NOTIFICATIONS || true
+          
+          # 2. Run the decryption and scraper script
+          python fetch_and_decrypt.py
+
+    - name: Commit and Push Decrypted Files
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add -f public_decrypted/ config.json
+        git commit -m "chore: update decrypted data feeds [skip ci]" || exit 0
+        git push
