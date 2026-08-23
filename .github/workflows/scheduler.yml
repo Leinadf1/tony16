@@ -2,8 +2,11 @@ name: Run Feed Processor
 
 on:
   schedule:
-    - cron: '0 * * * *'   # Runs every 1 hour
-  workflow_dispatch:      # Allows manual trigger
+    - cron: '0 * * * *'   # Ogni ora
+  workflow_dispatch:      # Avvio manuale
+
+permissions:
+  contents: write         # Permette il push automatico
 
 jobs:
   run-processor:
@@ -46,14 +49,24 @@ jobs:
         script: |
           # Unlock emulator screen
           adb shell wm dismiss-keyguard
-          
+
           # 1. Install official SportzX v3.2 APK (renamed to dudetv_3.2v.apk) granting all permissions
           adb install -g dudetv_3.2v.apk
-          
+
           # Explicitly grant POST_NOTIFICATIONS for Android 13+ safety
           adb shell pm grant com.sportzx.live android.permission.POST_NOTIFICATIONS || true
-          
-          # 2. Run the decryption and scraper script
+
+          # 2. Scarica frida-server.xz dalla repo originale (se non presente)
+          if [ ! -f frida-server ]; then
+            echo "Download frida-server.xz dalla repo originale..."
+            curl -L -o frida-server.xz https://raw.githubusercontent.com/mdjamsad9/dudetvapi/main/frida-server.xz
+            xz -d frida-server.xz
+            chmod +x frida-server
+          else
+            echo "frida-server già presente."
+          fi
+
+          # 3. Esegui lo script di decifratura e scraping
           python fetch_and_decrypt.py
 
     - name: Commit and Push Decrypted Files
