@@ -2,11 +2,11 @@ name: Run Feed Processor
 
 on:
   schedule:
-    - cron: '0 * * * *'   # Ogni ora
-  workflow_dispatch:      # Avvio manuale
+    - cron: '0 * * * *'
+  workflow_dispatch:
 
 permissions:
-  contents: write         # Permette il push automatico
+  contents: write
 
 jobs:
   run-processor:
@@ -47,26 +47,16 @@ jobs:
         disable-animations: true
         emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
         script: |
-          # Unlock emulator screen
+          # Sblocca lo schermo dell'emulatore
           adb shell wm dismiss-keyguard
 
-          # 1. Install official SportzX v3.2 APK (renamed to dudetv_3.2v.apk) granting all permissions
+          # Installa l'APK ufficiale SportzX v3.2 (rinominato dudetv_3.2v.apk) con tutti i permessi
           adb install -g dudetv_3.2v.apk
 
-          # Explicitly grant POST_NOTIFICATIONS for Android 13+ safety
+          # Concedi esplicitamente POST_NOTIFICATIONS (Android 13+)
           adb shell pm grant com.sportzx.live android.permission.POST_NOTIFICATIONS || true
 
-          # 2. Scarica frida-server.xz dalla repo originale (se non presente)
-          if [ ! -f frida-server ]; then
-            echo "Download frida-server.xz dalla repo originale..."
-            curl -L -o frida-server.xz https://raw.githubusercontent.com/mdjamsad9/dudetvapi/main/frida-server.xz
-            xz -d frida-server.xz
-            chmod +x frida-server
-          else
-            echo "frida-server già presente."
-          fi
-
-          # 3. Esegui lo script di decifratura e scraping
+          # Esegui lo script di decifratura e scraping (gestisce anche il download di frida-server)
           python fetch_and_decrypt.py
 
     - name: Commit and Push Decrypted Files
