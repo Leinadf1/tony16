@@ -1,11 +1,5 @@
 #EXTM3U
 
-#EXTINF:-1 tvg-logo="https://m.media-amazon.com/images/S/le-target-images-prod/amzn1.dv.gti.ba31a035-83fe-42f1-bcc0-9ec7289591e0/2/BOXART-16X9/it-IT._UR1920%2C1080_SX325_FMavif_PQ65_.jpeg" group-title="Prime Video",Xiao Guodong - Zhao Xintong Wuhan Open | Semifinali
-#KODIPROP:inputstream.adaptive.manifest_type=mpd
-#KODIPROP:inputstream.adaptive.license_type=clearkey
-#KODIPROP:inputstream.adaptive.license_key=98463cee9918e38f4f6810177e03a442:7fb26dc4e4efa32017aacdbd3f8722dd
-https://otte.live.fly.ww.aiv-cdn.net/lhr-nitro/live/clients/dash/enc/knkt2l4huc/out/v1/e90fff3fc84f404889612c9126ed9467/cenc.mpd
-
 #EXTINF:-1 group-title="PORTOGALLO" tvg-logo="https://3038.images-vfp2.ott.kaltura.com/Service.svc/GetImage/p/3038/entry_id/e3a7169255414c35b01973e333e762e5/version/0",Sport TV 1
 #KODIPROP:inputstream.adaptive.manifest_type=mpd
 #KODIPROP:inputstream.adaptive.license_type=clearkey
