@@ -189,6 +189,30 @@ https://bpcdnmanprod.nexttv.ht.hr/bpk-tv/arena10/default/index.mpd
 #EXTINF:-1 group-title="POLONIA" tvg-logo="https://static.wikia.nocookie.net/logopedia/images/3/33/Eleven_Sports_1.svg/revision/latest?cb=20210210162341",Eleven Sports 1
 #KODIPROP:inputstream.adaptive.manifest_type=mpd
 #KODIPROP:inputstream.adaptive.license_type=clearkey
+#KODIPROP:inputstream.adaptive.license_key={"525a9da2120045a6973709dbcd685609":"d8a7578d81ce754755a503ad8ac98ec0"}
+https://cdn-s-lb2.pluscdn.pl/ch/1457744/147/dash/4867711b/live.mpd
+
+#EXTINF:-1 group-title="POLONIA" tvg-logo="https://static.wikia.nocookie.net/logopedia/images/d/d1/Eleven_Sports_2.svg/revision/latest?cb=20210210162635",Eleven Sports 2
+#KODIPROP:inputstream.adaptive.manifest_type=mpd
+#KODIPROP:inputstream.adaptive.license_type=clearkey
+#KODIPROP:inputstream.adaptive.license_key={"a118a928ea39552f976c8fad437f71ad":"f58fb7a53ee86de9d0b9823446ba9756","78f826af752f54ddbc4ad9959ff2a42d":"c1479ffada263000730d627a989e96ab","95c2aefadb7e522c9deeed393207f853":"16e857224e16ab01a3c549212cdbdbb8"}
+https://lineartv-cdn.t-mobile.pl/bpk-tv/elevensports2/default/index.mpd
+
+#EXTINF:-1 group-title="POLONIA" tvg-logo="https://static.wikia.nocookie.net/logopedia/images/0/0f/Eleven_Sports_3.svg/revision/latest?cb=20210210162837",Eleven Sports 3
+#KODIPROP:inputstream.adaptive.manifest_type=mpd
+#KODIPROP:inputstream.adaptive.license_type=clearkey
+#KODIPROP:inputstream.adaptive.license_key={"d895d50a5a0f55758d31f247e6743815":"9f4882e56631edb0da1c7bf1e0fa4904","e3a9d5c27a6d5eac955daf5a1a640c69":"4c2e674f97ff33c5de13032b92e78bc9","e3dd9d531eee578fbd08c87de8ab84d5":"133e5a170236f4ba5930f5ba4213ee03"}
+https://lineartv-cdn.t-mobile.pl/bpk-tv/elevensports3/default/index.mpd
+
+#EXTINF:-1 group-title="POLONIA" tvg-logo="https://static.wikia.nocookie.net/logopedia/images/c/c8/Eleven_Sports_4.svg/revision/latest?cb=20210210163056",Eleven Sports 4
+#KODIPROP:inputstream.adaptive.manifest_type=mpd
+#KODIPROP:inputstream.adaptive.license_type=clearkey
+#KODIPROP:inputstream.adaptive.license_key={"37b0bbf897ad5bd5a3ec19b5a91f54f9":"3e84e6b93e19197d5aea59ef8ad9d270","54a7d8f8dbee564981beb470f22b529b":"a0e341fec141f8733c0805f5480762ba","14e62b5f16385a139e2a1c747b8b1cc4":"0cece074b5f3fabc76fc9ed109b3819d"}
+https://lineartv-cdn.t-mobile.pl/bpk-tv/elevensports4/default/index.mpd
+
+#EXTINF:-1 group-title="POLONIA" tvg-logo="https://static.wikia.nocookie.net/logopedia/images/3/33/Eleven_Sports_1.svg/revision/latest?cb=20210210162341",Eleven Sports 1
+#KODIPROP:inputstream.adaptive.manifest_type=mpd
+#KODIPROP:inputstream.adaptive.license_type=clearkey
 #KODIPROP:inputstream.adaptive.license_key={"4853dbe4c4cf51f3ba95424c6e6f69c7":"39c0346198bc9b1614eb319115afdb84","751db0bb03145084973c6cf9c85fa16e":"6571153c39eed18c29cdc63eb83c553a","fd9b5f8ae64a51edacd4f245ef515287":"c867d24646b170b5c0e0556b56b291d7"}
 https://lineartv-cdn.t-mobile.pl/bpk-tv/elevensports1/default/index.mpd
 
