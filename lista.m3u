@@ -1,13 +1,5 @@
 #EXTM3U
 
-#EXTINF:-1 tvg-id="80ybrfjez3kky87wi4f1qw0cz" tvg-name="Ottavi | Italia - Australia" tvg-logo="https://image.discovery.indazn.com/eu/v3/eu/none/80ybrfjez3kky87wi4f1qw0cz_image-header_pIt_1788816796000/fill/none/top/none/85/334/187/webp/image" group-title="DAZN Eventi",Ottavi | Italia - Australia
-#KODIPROP:inputstream.adaptive.manifest_type=mpd
-#KODIPROP:inputstream.adaptive.license_type=org.w3.clearkey
-#KODIPROP:inputstream.adaptive.license_key=c748161df3935e19a3240278efc8dcce:7a09d8dcc321dbe42624d2ca4d28cf64
-#KODIPROP:inputstream.adaptive.stream_headers==
-#EXTVLCOPT:http-user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36 Edg/151.0.0.0
-https://dca-fs-live-dazn-cdn.dazn.com/@eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODkwNzUyMzAsImtpZCI6IjIwMjIxMTIzIiwicGF0aF9kIjoxLCJwYXRoIjoiOTU3YTBmN2Y0ZTI4NDJjN2FiOTAxZmRjZTJjNGE1NjZmMTMwM2Y3MSIsInNzaWQiOiI2MDQ4MWQ0MDUzMWQiLCJwcm90byI6ImRhc2giLCJnZW8iOiJpdCIsImFzbiI6WyIyMTAyNzgiXSwiaWF0IjoxNzg4OTg4ODMwfQ.-o0yvTd9nCDWMJKYheA42OrRvig1yq1Gnv6QLThg9ng/116eayc0vhkvd1kg6f4mj54g8a/tv/stream.mpd?channel=5069&mta=it&outlet=dazn-italy&plang=it
-
 #EXTINF:-1 group-title="PORTOGALLO" tvg-logo="https://3038.images-vfp2.ott.kaltura.com/Service.svc/GetImage/p/3038/entry_id/e3a7169255414c35b01973e333e762e5/version/0",Sport TV 1
 #KODIPROP:inputstream.adaptive.manifest_type=mpd
 #KODIPROP:inputstream.adaptive.license_type=clearkey
